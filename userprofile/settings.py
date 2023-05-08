@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-$$+_f^+968zw&tn0n%6$0^g7*!)2g8s7s3dl_^cvu1hl#k(3@=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1"]
 
 
 # Application definition
@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "users",
 ]
 
 MIDDLEWARE = [
@@ -75,8 +76,12 @@ WSGI_APPLICATION = "userprofile.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "django_site",
+        "USER": "django",
+        "PASSWORD": "laptop",
+        "HOST": "127.0.0.1",
+        "PORT": "3306",
     }
 }
 
@@ -103,13 +108,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
-
-TIME_ZONE = "UTC"
-
+LANGUAGE_CODE = "en-GB"
+TIME_ZONE = "Europe/London"
 USE_I18N = True
-
 USE_TZ = True
+USE_L10N = True
 
 
 # Static files (CSS, JavaScript, Images)
@@ -120,4 +123,12 @@ STATIC_URL = "static/"
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTH_USER_MODEL = "users.CustomUser"
+FORMAT_MODULE_PATH = "userprofile.formats"
