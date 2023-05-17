@@ -9,6 +9,11 @@ class CustomUserCreationForm(UserCreationForm):
         fields = (
             "idnumber",
             "email",
+            "uid",
+            "first_name",
+            "middle_name",
+            "last_name",
+            "common_name",
         )
 
 

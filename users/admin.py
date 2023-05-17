@@ -20,22 +20,33 @@ class CustomUserAdmin(UserAdmin):
     list_display = (
         "idnumber",
         "get_fullname",
+        "uid",
         "email",
         "get_house",
+        "get_year",
         "is_active",
         "is_staff",
         "is_superuser",
-        "last_login",
         "date_joined",
     )
 
-    @admin.display(description="Full Name", ordering="student__last_name")
+    @admin.display(description="Full Name", ordering="last_name")
     def get_fullname(self, obj):
-        return f"{obj.student.first_name} {obj.student.last_name}"
+        if obj.middle_name:
+            return f"{obj.last_name}, {obj.first_name} {obj.middle_name[0]} ({obj.common_name})"
+        else:
+            return f"{obj.last_name}, {obj.first_name} ({obj.common_name})"
 
-    @admin.display(description="House", ordering="student__house")
+    @admin.display(
+        description="House",
+        ordering="student__house",
+    )
     def get_house(self, obj):
         return obj.student.house
+
+    @admin.display(description="Year", ordering="student__year")
+    def get_year(self, obj):
+        return obj.student.year
 
     list_filter = (
         "is_staff",
@@ -43,6 +54,7 @@ class CustomUserAdmin(UserAdmin):
         "date_joined",
         "last_login",
         "student__house",
+        "student__year",
     )
     fieldsets = (
         (
@@ -51,7 +63,12 @@ class CustomUserAdmin(UserAdmin):
                 "fields": (
                     "idnumber",
                     "email",
+                    "uid",
                     "password",
+                    "first_name",
+                    "last_name",
+                    "common_name",
+                    "middle_name",
                 )
             },
         ),
@@ -69,6 +86,11 @@ class CustomUserAdmin(UserAdmin):
                 "fields": (
                     "idnumber",
                     "email",
+                    "uid",
+                    "first_name",
+                    "last_name",
+                    "common_name",
+                    "middle_name",
                     "password1",
                     "password2",
                     "date_joined",
@@ -80,8 +102,15 @@ class CustomUserAdmin(UserAdmin):
             },
         ),
     )
-    search_fields = ("email", "idnumber", "student__house")
-    ordering = ("email",)
+    search_fields = (
+        "email",
+        "uid",
+        "idnumber",
+        "common_name",
+        "first_name",
+        "last_name",
+    )
+    ordering = ("uid",)
 
 
 admin.site.register(CustomUser, CustomUserAdmin)

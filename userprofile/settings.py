@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from django_auth_ldap.config import LDAPSearch, LDAPGroupQuery, GroupOfNamesType
+import ldap
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -132,3 +134,38 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.CustomUser"
 FORMAT_MODULE_PATH = "userprofile.formats"
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "django_auth_ldap.backend.LDAPBackend",
+]
+
+
+# LDAP Settings
+AUTH_LDAP_SERVER_URI = "ldap://hogwarts.wiz"
+AUTH_LDAP_BIND_DN = "cn=admin,dc=hogwarts,dc=wiz"
+AUTH_LDAP_BIND_PASSWORD = "laptop"
+AUTH_LDAP_USER_SEARCH = LDAPSearch(
+    "ou=people,dc=hogwarts,dc=wiz", ldap.SCOPE_SUBTREE, "(uid=%(user)s)"
+)
+
+AUTH_LDAP_USER_ATTR_MAP = {
+    "first_name": "givenName",
+    "last_name": "sn",
+    "middle_name": "middleName",
+    "common_name": "displayName",
+    "email": "mail",
+    "idnumber": "employeeNumber",
+    "student.house": "schoolHouse",
+}
+
+
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+    "ou=groups,dc=hogwarts,dc=wiz", ldap.SCOPE_SUBTREE, "(objectClass=groupOfNames)"
+)
+AUTH_LDAP_GROUP_TYPE = GroupOfNamesType()
+
+AUTH_LDAP_USER_FLAGS_BY_GROUP = {
+    "is_staff": LDAPGroupQuery("cn=Hogwarts Staff,ou=groups,dc=hogwarts,dc=wiz"),
+    "is_superuser": LDAPGroupQuery("cn=administrators,ou=groups,dc=hogwarts,dc=wiz"),
+}
