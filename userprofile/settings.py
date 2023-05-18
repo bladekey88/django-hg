@@ -158,6 +158,7 @@ AUTH_LDAP_USER_ATTR_MAP = {
     "email": "mail",
     "idnumber": "employeeNumber",
     "student.house": "schoolHouse",
+    "title": "title",
 }
 
 
@@ -170,3 +171,10 @@ AUTH_LDAP_USER_FLAGS_BY_GROUP = {
     "is_staff": LDAPGroupQuery("cn=Hogwarts Staff,ou=groups,dc=hogwarts,dc=wiz"),
     "is_superuser": LDAPGroupQuery("cn=administrators,ou=groups,dc=hogwarts,dc=wiz"),
 }
+
+
+LOGIN_REDIRECT_URL = "account:dashboard"
+LOGIN_URL = "account:login"
+LOGOUT_URL = "account:logout"
+LOGOUT_REDIRECT_URL = "account:login"
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

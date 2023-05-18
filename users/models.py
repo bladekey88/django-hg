@@ -28,39 +28,64 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     objects = CustomUserManager()
 
+    class Title(models.TextChoices):
+        MISS = "Miss"
+        MR = "Mr"
+        MRS = "Mrs"
+        MS = "Ms"
+        MX = "Mx"
+        DR = "Doctor"
+        MADAM = "Madam"
+        MADAME = "Madame"
+        MASTER = "Master"
+        PROFESSOR = "Professor"
+        MINISTER = "Minister"
+        SIR = "Sir"
+        DAME = "Dame"
+        UNKNOWN = "Unknown"
+
+    title = models.CharField(
+        "Title", max_length=20, default=Title.UNKNOWN, choices=Title.choices
+    )
+
     def full_name(self):
         return f"{self.first_name} {self.middle_name} {self.last_name}"
 
-    def full_common_name(self):
-        return f"{self.common_name} {self.middle_name} {self.last_name}"
+    def full_common_name(self, include_middle=False):
+        if include_middle:
+            return f"{self.common_name} {self.middle_name} {self.last_name}"
+        else:
+            return f"{self.common_name}  {self.last_name}"
 
     class Meta:
         verbose_name = "User"
         verbose_name_plural = "Users"
 
     def __str__(self):
-        return f"{self.idnumber} - {self.email}"
+        return f"{self.idnumber} - {self.uid}"
+
+    def is_student(self):
+        try:
+            Student.objects.get(user=self)
+            return True
+        except Exception:
+            return False
 
 
 class Student(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
-    GRYFFINDOR = "GR"
-    HUFFLEPUFF = "HU"
-    RAVENCLAW = "RA"
-    SLYTHERIN = "SL"
-    UNSORTED = "UN"
-    HOUSE_CHOICES = [
-        (GRYFFINDOR, "Gryffindor"),
-        (HUFFLEPUFF, "Huffelpuff"),
-        (RAVENCLAW, "Ravenclaw"),
-        (SLYTHERIN, "Slytherin"),
-        (UNSORTED, "Unsorted"),
-    ]
+
+    class House(models.TextChoices):
+        GRYFFINDOR = "GR", "Gryffindor"
+        HUFFLEPUFF = "HU", "Hufflepuff"
+        RAVENCLAW = "RA", "Ravenclaw"
+        SLYTHERIN = "SL", "Slytherin"
+        UNSORTED = "UN", "Unknown"
 
     house = models.CharField(
         max_length=2,
-        choices=HOUSE_CHOICES,
-        default=UNSORTED,
+        choices=House.choices,
+        default=House.UNSORTED,
     )
 
     class Year(models.IntegerChoices):
@@ -84,14 +109,14 @@ class Student(models.Model):
 
     def is_sorted(self) -> bool:
         return self.house in {
-            self.GRYFFINDOR,
-            self.HUFFLEPUFF,
-            self.RAVENCLAW,
-            self.SLYTHERIN,
+            House.GRYFFINDOR,
+            House.HUFFLEPUFF,
+            House.RAVENCLAW,
+            House.SLYTHERIN,
         }
 
     def is_unsorted(self) -> bool:
-        return self.house in {self.UNSORTED}
+        return self.house in {House.UNSORTED}
 
     def is_owl_student(self):
         return self.year <= 5

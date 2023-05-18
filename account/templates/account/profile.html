@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block pagestyle %}
+<style>
+body.profile {
+    background: rgba(0, 0, 0,0.70) !important
+}
+.labels {
+    font-size: 11px
+}
+</style>
+
+{% endblock pagestyle %}
+{% block contentclass %}{% endblock contentclass %}
+{% block bodyclass %}profile{% endblock bodyclass %}
+{% block content %}
+       
+		<div class="container rounded bg-white mt-5 mb-5"> 
+			<div class="row">
+				<!-- Profile Picture Column -->
+				<div class="col-md-3 border-end border-1 shadow bg-dark text-white">
+					<div class="d-flex flex-column align-items-center text-center p-2 pt-3">
+						{% if ldap_info.jpegPhoto.0|length == 0 %}
+						<img width="50%" class="shadow img-fluid rounded-circle mt-4 mb-2" src="<?php echo NO_PROFILE_IMAGE_PATH; ?>"/>
+						{% else %}
+						<img width="75%" class="shadow img-fluid rounded-circle mt-4 mb-2" src="data:image/png;base64?,"/>
+						{% endif %}
+						<span class="font-weight-bold">
+                            {{user.full_common_name}}
+						</span>
+						<span class="text-white-50"><?php echo $email; ?>
+						</span>
+					</div>
+                    {% if user.is_student %}
+					<div class="small d-flex flex-column align-items-center text-center p-2 mt-3 pt-3 border-top border-secondary border-1 border-opacity-25">
+						<img width="50%" class="img-fluid " alt="House Crest" src="<?php echo HOUSE_IMAGE_PATH . $house . HOUSE_IMAGE; ?>"/>
+						<p class="mt-2 h6">{{user.student.get_house_display}} {{user.student.get_year_display}} Year</p>
+							
+					</div>
+                    {% endif %}
+					<div class="small d-flex flex-column align-items-center text-center p-2 mt-2 border-top border-secondary border-1 border-opacity-25">
+						<span class="font-weight-bold align-items-center">Directory Information</span>
+						<span class="text-white-50">ou: {{ldap_info.ou.0}}</span>
+						<span class="text-white-50">cn: {{ldap_info.cn.0}}</span>
+						<span class="small text-white-50 text-break">dn: {{ldap_dn}}</span>
+					</div>
+				</div>
+				<!-- Profile Details Column -->
+				<div class="col-md-5 border-1 border-end">
+					<div class="p-3 pt-5">
+						<div class="d-flex justify-content-between align-items-center mb-3">						
+							<h4 class="text-right">Profile Information</h4>
+							<a class="btn btn-outline-primary disabled" role="button" aria-disabled="True">Edit My Profile</a>
+						</div>
+						<div class="row shadow mt-2 border border-info border-3 border-opacity-25 rounded align-items-center p-1">
+							<div class="col-md-6">
+								<label class="labels">Given Name</label>
+								<p class="mt-2 h6">{{user.first_name}}</p>
+							</div>
+							<div class="col-md-6">
+								<label class="labels">Surname</label>
+								<p class="mt-2 h6">{{user.last_name}}</p>
+							</div>
+						</div>
+						<div class="row p-2 mt-3 border border-primary border-2 rounded border-opacity-25">
+							<div class="col-md-12">
+								<label class="labels">Title</label>
+								<p class="mt-2 h6">{{user.title}}</p>
+							</div>
+							<div class="col-md-12">
+								<label class="labels">Preferred/Display Name</label>
+								<p class="mt-2 h6">{{user.common_name}}</p>
+							</div>
+							<div class="col-md-12">
+								<label class="labels">Middle Name(s)</label>
+								<p class="mt-2 h6">{{user.middle_name}}</p>
+							</div>
+							<div class="col-md-12">
+								<label class="labels">Identification Number</label>
+								<p class="mt-2 h6">{{user.idnumber}}</p>
+							</div>
+							<div class="col-md-12">
+								<label class="labels">User ID</label>
+								<p class="mt-2 h6">{{user.uid}}</p>
+							</div>
+							<div class="col-md-12">
+								<label class="labels">Email Address</label>
+								<p class="mt-2 h6">{{user.email}}</p>
+							</div>
+							<div class="col-md-12">
+								<label class="labels">Profile Type</label>
+								<p class="mt-2 h6">{{ldap_info.employeeType.0}}</p>
+							</div>
+							<div class="col-md-12">
+								<label class="labels">Location</label>
+								<p class="mt-2 h6">Hogwarts</p>
+							</div>
+							<div class="col-md-12">
+								<label class="labels">Head of House/Manager</label>
+                                {% if manager %}
+                                <a href="{% url 'account:profile_other_user' uid=manager.uid.0 %}">
+								    <p class="mt-2 h6">{{manager.preferredFullName.0}} 
+                                    <span class ="small">({{manager.uid.0}})</span>
+                                    </p>
+                                </a>
+                                {% else %}
+                                <p class="mt-2 fw-light fst-italic">Manager information not listed in directory</p>
+                                {% endif %} 
+                                
+							</div>
+							<div class="col-md-12">
+								<label class="labels">Preferred Language</label>
+								<p class="mt-2 h6">{{ldap_info.preferredLanguage.0}}</p>
+							</div>
+						</div>
+						<div class="row mt-2 border border-primary border-2 rounded border-opacity-25 pb-3">
+							<div class="col-md-12">
+								<label class="labels">Account Status</label>
+                                {% if ldap_info.suspendedAccount.0 == "TRUE" %}
+                                    <h6 class="text-center text-danger fw-bold">Account Suspended in Directory</h6>
+                                {% endif %}
+								{% if user.is_active %}
+								<div class="shadow alert alert-success border-0 border-start border-end border-5 border-success m-0 p-0 p-1">
+									<p class="align-top text-center m-0 p-0">Active</p>
+								</div>
+								{% else %}
+								<div class=" shadow alert alert-danger border-0 border-start border-end border-5 border-danger m-0 p-0 p-1">
+									<p class="align-top text-center m-0 p-0 h6 fw-bold text-danger">Inactive</p>
+								</div>
+								{% endif %}
+							</div>
+						</div>						
+					</div>
+				</div>				
+				<!-- Additional Details Column -->
+				<div class="col-md-4">
+					<div class="p-3 py-5">
+					<?php if ($quidditch=="TRUE") : ?>
+						<div class="d-flex justify-content-between align-items-center mb-3">
+							<h4 class="text-right text-muted">Additional Information</h4>
+						</div>
+						<div class="col-md-12 border-bottom border-1 border-secondary border-opacity-25">
+							<div class="row text-center">
+								<div class="d-none d-md-block col-12">
+									<img width="33%" class="img-fluid " alt="House Crest" src="<?php echo HOUSE_IMAGE_PATH . QUIDDITCH_IMAGE . $house . ".jpg"; ?>"></img>
+								</div>
+								<div class="col-12">
+									<p class="mt-2 h6"><?php echo "$house Quidditch Team Member"; ?></p>
+								</div>
+							</div>
+						</div>
+						<?php endif; ?>
+						<div class="d-flex justify-content-between align-items-center mt-3">
+							<h4 class="text-right text-muted">Access Information</h4>
+						</div>
+						<div class="row align-items-center border border-primary border-2 rounded border-opacity-25 pb-3">
+							<div class="col-12 col-md-10 row me-1">
+								
+								<button type="button" class="m-2 pe-none btn btn-sm btn-<?php echo $vle_status;?> border border-dark border-3 border-opacity-50 d-flex justify-content-between align-items-center">
+									<span class="h6 mt-2">
+										HVLE
+									<?php echo $vle_message; ?>										
+									</span>									
+									<span class="pe-auto ms-1 mt-2 badge text-bg-light border border-<?php echo $vle_status;?> border-3 border-opacity-75">
+										<a href="/vle">
+											<i class="h6 font-weight-bold text-<?php echo $vle_status;?> bi <?php echo $vle_icon;?>"></i>
+										</a>
+									</span>									
+								</button>
+								
+							</div>
+							<div class="col-12 col-md-10 row me-1">
+								<button type="button" class="m-2 pe-none btn btn-sm btn-success border border-dark border-3 border-opacity-50 d-flex justify-content-between align-items-center">
+									<span class="h6 mt-2">
+										Helpdesk 
+									</span>
+									<span class="ms-1 mt-2 badge text-bg-light border border-success border-3 border-opacity-75">
+										<i class="h6 font-weight-bold text-success bi bi-check-lg"></i>
+									</span>
+								</button>
+							</div>
+							<?php if (array_key_exists("openfire",$groups)) : ?>
+							<div id="chat" class="col-12 col-md-10 row me-1">
+								<button type="button" class="m-2 pe-none btn btn-sm btn-success border border-dark border-3 border-opacity-50 d-flex justify-content-between align-items-center">
+									<span class="h6 mt-2">
+										Chat 
+									</span>
+									<span class="ms-1 mt-2 badge text-bg-light border border-success border-3 border-opacity-75">
+										<i class="h6 font-weight-bold text-success bi bi-check-lg"></i>
+									</span>
+								</button>
+							</div>
+							<?php endif; ?>
+							<?php if (array_key_exists("hdab",$groups)) : ?>
+							<div id="HDB" class="col-12 col-md-10 row me-1">
+								<button type="button" class="m-2 pe-none btn btn-sm btn-success border border-dark border-3 border-opacity-50 d-flex justify-content-between align-items-center">
+									<span class="h6 mt-2">
+										Database 
+									</span>
+									<span class="ms-1 mt-2 badge text-bg-light border border-success border-3 border-opacity-75">
+										<i class="h6 font-weight-bold text-success bi bi-check-lg"></i>
+									</span>
+								</button>
+							</div>
+							<?php endif; ?>
+							<?php if (array_key_exists("mahara",$groups)) : ?>
+							<div id="eport" class="col-12 col-md-10 row me-1">
+								<button type="button" class="m-2 pe-none btn btn-sm btn-success border border-dark border-3 border-opacity-50 d-flex justify-content-between align-items-center">
+									<span class="h6 mt-2">
+										E-Portfolio 
+									</span>
+									<span class="ms-1 mt-2 badge text-bg-light border border-success border-3 border-opacity-75">
+										<i class="h6 font-weight-bold text-success bi bi-check-lg"></i>
+									</span>
+								</button>
+							</div>
+							<?php endif; ?>
+							<div class="col-12 col-md-10 row me-1">
+								<button type="button" class="m-2 pe-none btn btn-sm btn-success border border-dark border-3 border-opacity-50 d-flex justify-content-between align-items-center">
+									<span class="h6 mt-2">
+										Forums 
+									</span>
+									<span class="ms-1 mt-2 badge text-bg-light border border-success border-3 border-opacity-75">
+										<i class="h6 font-weight-bold text-success bi bi-check-lg"></i>
+									</span>
+								</button>
+							</div>							
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>		
+{% endblock content %}

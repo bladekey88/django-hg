@@ -23,7 +23,7 @@ def populate_user_profile(sender, user, ldap_user, **kwargs):
                 temp_profile = Student.objects.create(user=user)
 
             house_raw = ldap_user.attrs.get("schoolHouse")
-            houses = [x[0] for x in Student.HOUSE_CHOICES]
+            houses = [x[0] for x in Student.House]
             if house_raw[0][0:2].upper() in houses:
                 data["house"] = house_raw[0][0:2].upper()
 
@@ -59,7 +59,7 @@ def create_user_profile(sender, instance, created, **kwargs):
             profile = Student.objects.create(user=instance)
             data = {}
             house_raw = instance.ldap_user.attrs.get("schoolHouse")
-            houses = [x[0] for x in Student.HOUSE_CHOICES]
+            houses = [x[0] for x in Student.House]
             if house_raw[0][0:2].upper() in houses:
                 data["house"] = house_raw[0][0:2].upper()
 
