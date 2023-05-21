@@ -1,6 +1,6 @@
 from django.dispatch import receiver
 import django_auth_ldap.backend
-from users.models import Student, CustomUser
+from users.models import Student, CustomUser, QuidditchPlayer
 from django.db.models.signals import post_save
 from django.contrib.auth.models import Group
 
@@ -23,13 +23,27 @@ def populate_user_profile(sender, user, ldap_user, **kwargs):
                 temp_profile = Student.objects.create(user=user)
 
             house_raw = ldap_user.attrs.get("schoolHouse")
-            houses = [x[0] for x in Student.House]
-            if house_raw[0][0:2].upper() in houses:
+            houses = Student.House.labels
+            if house_raw[0] in houses:
                 data["house"] = house_raw[0][0:2].upper()
 
             year_raw = ldap_user.attrs.get("schoolYear")
             years = Student.Year
             data["year"] = years.labels.index(year_raw[0].split(" ")[0])
+
+            quidditch_raw = ldap_user.attrs.get("quidditchPlayer")
+            if quidditch_raw:
+                if quidditch_raw[0] == "TRUE":
+                    try:
+                        temp_profile2 = user.student.quidditchplayer
+                        print("halt")
+                    except Exception:
+                        temp_profile2 = QuidditchPlayer.objects.create(
+                            student=user.student
+                        )
+
+                    temp_profile2.save()
+                    # user.quidditchplayer.save()
 
             for key, value in data.items():
                 if value:
@@ -50,32 +64,35 @@ def create_user_profile(sender, instance, created, **kwargs):
         all_users_group = Group.objects.get(name="All Users")
         instance.groups.add(all_users_group)
 
-        if instance.ldap_user.attrs.get("employeeType")[0].lower() == "student":
-            # Add to All Students Group
-            all_students_group = Group.objects.get(name="All Students")
-            instance.groups.add(all_students_group)
+        try:
+            if instance.ldap_user.attrs.get("employeeType")[0].lower() == "student":
+                # Add to All Students Group
+                all_students_group = Group.objects.get(name="All Students")
+                instance.groups.add(all_students_group)
 
-            # Create Profile Instance
-            profile = Student.objects.create(user=instance)
-            data = {}
-            house_raw = instance.ldap_user.attrs.get("schoolHouse")
-            houses = [x[0] for x in Student.House]
-            if house_raw[0][0:2].upper() in houses:
-                data["house"] = house_raw[0][0:2].upper()
+                # Create Profile Instance
+                profile = Student.objects.create(user=instance)
+                data = {}
+                house_raw = instance.ldap_user.attrs.get("schoolHouse")
+                houses = Student.House.labels
+                if house_raw[0] in houses:
+                    data["house"] = house_raw[0][0:2].upper()
 
-            year_raw = instance.ldap_user.attrs.get("schoolYear")
-            years = Student.Year
-            data["year"] = years.labels.index(year_raw[0].split(" ")[0])
-            print(instance.ldap_user)
-            for key, value in data.items():
-                if value:
-                    setattr(profile, key, value)
-            profile.save()
+                year_raw = instance.ldap_user.attrs.get("schoolYear")
+                years = Student.Year
+                data["year"] = years.labels.index(year_raw[0].split(" ")[0])
+                print(instance.ldap_user)
+                for key, value in data.items():
+                    if value:
+                        setattr(profile, key, value)
+                profile.save()
 
-        elif instance.ldap_user.attrs.get("employeeType")[0].lower() == "staff":
-            # Add to All Students Group
-            all_staff_group = Group.objects.get(name="All Staff")
-            instance.groups.add(all_staff_group)
+            elif instance.ldap_user.attrs.get("employeeType")[0].lower() == "staff":
+                # Add to All Students Group
+                all_staff_group = Group.objects.get(name="All Staff")
+                instance.groups.add(all_staff_group)
+        except Exception:
+            pass
 
 
 # @receiver(populate_user, sender=LDAPBackend)

@@ -159,6 +159,7 @@ AUTH_LDAP_USER_ATTR_MAP = {
     "idnumber": "employeeNumber",
     "student.house": "schoolHouse",
     "title": "title",
+    "quidditchplayer.is_player": "quidditchPlayer",
 }
 
 

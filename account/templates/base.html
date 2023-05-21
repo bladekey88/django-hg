@@ -98,6 +98,11 @@
 			.card .img-fluid {
 				height: 100% !important ;
 			}
+
+			nav a:hover:not(.btn) {
+				color: #8a77b4 !important;
+				transition: 0.3s all;
+			}
 		</style>
         {% endblock pagestyle %}
         <header>
@@ -111,11 +116,19 @@
                     {% if request.user.is_authenticated %}
                     <div>
                         <a class="navbar-brand fs-6">
-                            <a class="me-2 align-middle text-white text-decoration-none" href="{% url 'account:profile' %}"><i class="flex-shrink-0 me-2 bi bi-person-circle"></i>
+                            <a class="me-1 align-middle text-white text-decoration-none" href="{% url 'account:profile' %}">
+								<i class="flex-shrink-0 me-1 bi bi-person-circle"></i>
                             Logged in as <span class='fw-bolder'>
                                 {{ request.user.uid|default:request.user.uid }}</span></a>
                         </a>  
-                        <a class="btn btn-outline-danger btn-sm" href="{% url 'account:logout' %}" role="button">Log Out</a> 
+						{% if request.user.is_staff %}
+                        <a class="me-2 align-middle text-white text-decoration-none border-0 border-start border-2 border-warning" href="{% url 'admin:login' %}">
+							<i class="ms-2 text-warning text-decoration-underline flex-shrink-0 me-1 bi bi-shield-lock-fill"></i>
+							<span class='fw-lighter'>Administer</span>
+						</a>
+						{% endif %}
+						<a class="btn btn-outline-danger btn-sm" href="{% url 'account:logout' %}" role="button">Log Out</a> 
+					
                     </div>
                     {% else %}
                          <a class="btn btn-outline-danger btn-sm" href="{% url 'account:login' %}">Login</a>

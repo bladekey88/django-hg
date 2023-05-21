@@ -55,7 +55,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         if include_middle:
             return f"{self.common_name} {self.middle_name} {self.last_name}"
         else:
-            return f"{self.common_name}  {self.last_name}"
+            return f"{self.common_name} {self.last_name}"
 
     class Meta:
         verbose_name = "User"
@@ -107,6 +107,11 @@ class Student(models.Model):
         ],
     )
 
+    class meta:
+        verbose_name = "Student"
+        verbose_name_plural = "Students"
+        ordering = ("user__last_name",)
+
     def is_sorted(self) -> bool:
         return self.house in {
             House.GRYFFINDOR,
@@ -125,7 +130,44 @@ class Student(models.Model):
         return self.year >= 6
 
     def __str__(self):
-        return f"{self.user.idnumber} - {self.user.email} - {self.house} {self.year}"
+        return f"{self.user.full_common_name()} ({self.user.idnumber} {self.get_year_display()} Year {self.get_house_display()})"
 
     def __repr__(self):
         return self.user.email
+
+
+class QuidditchPlayer(models.Model):
+    class Meta:
+        verbose_name = "Quidditch Player"
+        verbose_name_plural = "Quidditch Players"
+        ordering = ["student__house", "student__user__last_name"]
+
+    student = models.OneToOneField(Student, on_delete=models.CASCADE)
+    is_captain = models.BooleanField("Is Captain", default=False)
+    is_suspended = models.BooleanField("Is Suspended", default=False)
+
+    class QuidditchTeamMeber(models.TextChoices):
+        MEMBER = "ME", "Team Member"
+        RESERVE = "RE", "Team Reserve"
+
+    team_member_type = models.TextField(
+        max_length=2,
+        choices=QuidditchTeamMeber.choices,
+    )
+
+    class QuidditchPosition(models.TextChoices):
+        KEEPER = "KE", "Keeper"
+        CHASER = "CH", "Chaser"
+        BEATER = "BE", "Beater"
+        SEEKER = "SE", "Seeker"
+
+    team_position = models.TextField(
+        max_length=2,
+        choices=QuidditchPosition.choices,
+    )
+
+    def __str__(self) -> str:
+        return f"{self.student.user.common_name} {self.student.user.last_name} "
+
+    def __repr__(self):
+        return f"{self.student}: {self.team_member_type} {self.team_position}"
