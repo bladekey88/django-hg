@@ -21,16 +21,13 @@ def populate_user_profile(sender, user, ldap_user, **kwargs):
                 temp_profile = user.student
             except Exception:
                 temp_profile = Student.objects.create(user=user)
-
             house_raw = ldap_user.attrs.get("schoolHouse")
             houses = Student.House.labels
             if house_raw[0] in houses:
                 data["house"] = house_raw[0][0:2].upper()
-
             year_raw = ldap_user.attrs.get("schoolYear")
             years = Student.Year
             data["year"] = years.labels.index(year_raw[0].split(" ")[0])
-
             quidditch_raw = ldap_user.attrs.get("quidditchPlayer")
             if quidditch_raw:
                 if quidditch_raw[0] == "TRUE":
@@ -41,14 +38,16 @@ def populate_user_profile(sender, user, ldap_user, **kwargs):
                         temp_profile2 = QuidditchPlayer.objects.create(
                             student=user.student
                         )
-
                     temp_profile2.save()
                     # user.quidditchplayer.save()
-
             for key, value in data.items():
                 if value:
                     setattr(user.student, key, value)
             user.student.save()
+        elif account_type.lower() == "staff":
+            # Add to All Staff Group
+            all_staff_group = Group.objects.get(name="All Staff")
+            user.groups.add(all_staff_group)
 
     else:
         pass  # This means  User is logging in first time so create_user_profile signal will handle profile data

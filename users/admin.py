@@ -1,15 +1,19 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import CustomUser, Student, QuidditchPlayer
+from .models import CustomUser, Student, QuidditchPlayer, Staff
 from .forms import CustomUserChangeForm, CustomUserCreationForm
 
 
 # Register your models here.
 class StudentInline(admin.TabularInline):
     model = Student
-    can_delete = False
     verbose_name_plural = "Student"
+
+
+class StaffInline(admin.TabularInline):
+    model = Staff
+    verbose_name = "Staff"
 
 
 class QuidditchPlayerAdmin(admin.ModelAdmin):
@@ -95,7 +99,7 @@ class QuidditchPlayerAdmin(admin.ModelAdmin):
 
 
 class CustomUserAdmin(UserAdmin):
-    inlines = [StudentInline]
+    inlines = [StudentInline, StaffInline]
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm
     model = CustomUser
@@ -106,11 +110,16 @@ class CustomUserAdmin(UserAdmin):
         "email",
         "get_house",
         "get_year",
+        "get_staff_role",
         "is_active",
         "is_staff",
         "is_superuser",
         "date_joined",
     )
+
+    @admin.display(description="Staff Role")
+    def get_staff_role(self, obj):
+        return obj.staff.get_staff_type_display()
 
     @admin.display(description="Full Name", ordering="last_name")
     def get_fullname(self, obj):
@@ -137,6 +146,8 @@ class CustomUserAdmin(UserAdmin):
         "last_login",
         "student__house",
         "student__year",
+        "staff__staff_type",
+        "sex",
     )
     fieldsets = (
         (
@@ -152,6 +163,7 @@ class CustomUserAdmin(UserAdmin):
                     "last_name",
                     "common_name",
                     "middle_name",
+                    "sex",
                 )
             },
         ),
@@ -168,12 +180,13 @@ class CustomUserAdmin(UserAdmin):
                 "classes": ("wide",),
                 "fields": (
                     "idnumber",
-                    "email",
                     "uid",
+                    "email",
                     "title",
                     "first_name",
                     "last_name",
                     "common_name",
+                    "sex",
                     "middle_name",
                     "password1",
                     "password2",
@@ -197,5 +210,73 @@ class CustomUserAdmin(UserAdmin):
     ordering = ("uid",)
 
 
+class StudentAdmin(admin.ModelAdmin):
+    @admin.display(
+        description="Student",
+        ordering="user__last_name",
+    )
+    def get_full_name(self, obj):
+        return obj.user.full_name(True)
+
+    @admin.display(
+        description="Student ID Number",
+    )
+    def get_idnumber(self, obj):
+        return obj.user.idnumber
+
+    @admin.display(description="OWL Student")
+    def get_owl(self, obj):
+        return obj.is_owl_student()
+
+    @admin.display(description="NEWT Student")
+    def get_newt(self, obj):
+        return obj.is_newt_student()
+
+    @admin.display(description="Quidditch Player")
+    def get_quidditch(self, obj):
+        return obj.quidditchplayer.get_team_member_type_display()
+
+    readonly_fields = [
+        "get_owl",
+        "get_newt",
+        "get_quidditch",
+    ]
+
+    search_fields = [
+        "user__email",
+        "user__uid",
+        "user__last_name",
+        "user__first_name",
+        "user__middle_name",
+        "user__common_name",
+        "user__email",
+    ]
+    list_display = ["get_full_name", "house", "year", "get_idnumber"]
+    list_filter = ["house", "year"]
+    ordering = (
+        "house",
+        "year",
+        "user__first_name",
+    )
+
+
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(QuidditchPlayer, QuidditchPlayerAdmin)
+admin.site.register(Student, StudentAdmin)
+admin.site.register(Staff)
+
+
+# @@admin.register()
+# class Admin(admin.ModelAdmin):
+#     '''Admin View for '''
+
+#     list_display = ('',)
+#     list_filter = ('',)
+#     inlines = [
+#         Inline,
+#     ]
+#     raw_id_fields = ('',)
+#     readonly_fields = ('',)
+#     search_fields = ('',)
+#     date_hierarchy = ''
+#     ordering = ('',)

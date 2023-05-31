@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
@@ -23,12 +24,22 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField("Last Name", max_length=255)
     common_name = models.CharField("Preferred Name", max_length=255)
 
+    class Sex(models.TextChoices):
+        UNKNOWN = "U", "Unknown"
+        MALE = "M", "Male"
+        FEMALE = "F", "Female"
+
+    sex = models.CharField(
+        "Sex", max_length=1, choices=Sex.choices, default=Sex.UNKNOWN
+    )
+
     USERNAME_FIELD = "uid"
     REQUIRED_FIELDS = ["email", "idnumber"]
 
     objects = CustomUserManager()
 
     class Title(models.TextChoices):
+        UNKNOWN = "Unknown"
         MISS = "Miss"
         MR = "Mr"
         MRS = "Mrs"
@@ -42,14 +53,16 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         MINISTER = "Minister"
         SIR = "Sir"
         DAME = "Dame"
-        UNKNOWN = "Unknown"
 
     title = models.CharField(
         "Title", max_length=20, default=Title.UNKNOWN, choices=Title.choices
     )
 
-    def full_name(self):
-        return f"{self.first_name} {self.middle_name} {self.last_name}"
+    def full_name(self, include_middle=False):
+        if include_middle:
+            return f"{self.first_name} {self.middle_name} {self.last_name}"
+        else:
+            return f"{self.first_name} {self.last_name}"
 
     def full_common_name(self, include_middle=False):
         if include_middle:
@@ -62,7 +75,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         verbose_name_plural = "Users"
 
     def __str__(self):
-        return f"{self.idnumber} - {self.uid}"
+        return f"{self.full_name(True)} - {self.uid}"
+
+    def __repr__(self):
+        return f"{self.full_name(True)} - {self.uid}"
 
     def is_student(self):
         try:
@@ -129,6 +145,21 @@ class Student(models.Model):
     def is_newt_student(self):
         return self.year >= 6
 
+    def clean(self, *args, **kwargs):
+        USER_IS_STAFF_ERROR = f"""
+        {self.user.full_common_name()} cannot be a Student because they
+        already exist as a Staff Member. If you wish to proceed you must delete
+        the Staff Member attributes."""
+
+        try:
+            staff_exists = self.user.staff
+            raise ValidationError(USER_IS_STAFF_ERROR)
+        except AttributeError:
+            staff_exists = False
+
+        if not staff_exists:
+            print("Good to proceed")
+
     def __str__(self):
         return f"{self.user.full_common_name()} ({self.user.idnumber} {self.get_year_display()} Year {self.get_house_display()})"
 
@@ -166,8 +197,63 @@ class QuidditchPlayer(models.Model):
         choices=QuidditchPosition.choices,
     )
 
+    def clean(self, *args, **kwargs):
+        USER_IS_NOT_STUDENT_ERROR = f"""
+        {self.student.user.full_common_name()} cannot be a Quidditch Team Member
+        because they are not a Student. If you wish to proceed you must add the
+        Student attributes to the User."""
+
+        try:
+            student_exists = self.student
+        except AttributeError:
+            raise ValidationError(USER_IS_NOT_STUDENT_ERROR)
+
+        if student_exists:
+            return super(QuidditchPlayer, self).save(*args, **kwargs)
+
     def __str__(self) -> str:
-        return f"{self.student.user.common_name} {self.student.user.last_name} "
+        return f"{self.student.user.common_name} {self.student.user.last_name}"
 
     def __repr__(self):
         return f"{self.student}: {self.team_member_type} {self.team_position}"
+
+
+class Staff(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+
+    class meta:
+        verbose_name = "Staff Member"
+        verbose_name_plural = "Staff Members"
+        ordering = ("user__last_name",)
+
+    class StaffType(models.TextChoices):
+        ACADEMIC = "AC", "Academic"
+        PASTORAL = "PA", "Pastoral"
+        CLERICAL = "CL", "Clerical"
+        OTHER = "OT", "Other"
+
+    staff_type = models.TextField(
+        max_length=2,
+        choices=StaffType.choices,
+    )
+
+    def clean(self, *args, **kwargs):
+        USER_IS_STUDENT_ERROR = f"""
+        {self.user.full_common_name()} cannot be a Staff Member because they
+        already exist as a Student. If you wish to proceed you must delete
+        the Student attributes."""
+
+        try:
+            student_exists = self.user.student
+            raise ValidationError(USER_IS_STUDENT_ERROR)
+        except AttributeError:
+            student_exists = False
+
+        if not student_exists:
+            print("Good to proceed")
+
+    def __str__(self) -> str:
+        return f"{self.user.full_common_name()} {self.get_staff_type_display()}"
+
+    def __repr__(self) -> str:
+        return f"{self.user.full_common_name()} ({self.user.idnumber})"

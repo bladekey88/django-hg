@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "users.apps.UsersConfig",
+    "ldap_sync",
 ]
 
 MIDDLEWARE = [
@@ -147,7 +148,7 @@ AUTH_LDAP_SERVER_URI = "ldap://hogwarts.wiz"
 AUTH_LDAP_BIND_DN = "cn=admin,dc=hogwarts,dc=wiz"
 AUTH_LDAP_BIND_PASSWORD = "laptop"
 AUTH_LDAP_USER_SEARCH = LDAPSearch(
-    "ou=people,dc=hogwarts,dc=wiz", ldap.SCOPE_SUBTREE, "(uid=%(user)s)"
+    "ou=people,dc=hogwarts,dc=wiz", ldap.SCOPE_SUBTREE, "(uid=%(user)s)"  # type: ignore
 )
 
 AUTH_LDAP_USER_ATTR_MAP = {
@@ -160,6 +161,8 @@ AUTH_LDAP_USER_ATTR_MAP = {
     "student.house": "schoolHouse",
     "title": "title",
     "quidditchplayer.is_player": "quidditchPlayer",
+    "uid": "uid",
+    "sex": "sex",
 }
 
 
@@ -169,7 +172,8 @@ AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
 AUTH_LDAP_GROUP_TYPE = GroupOfNamesType()
 
 AUTH_LDAP_USER_FLAGS_BY_GROUP = {
-    "is_staff": LDAPGroupQuery("cn=Hogwarts Staff,ou=groups,dc=hogwarts,dc=wiz"),
+    "is_staff": LDAPGroupQuery("cn=students,ou=groups,dc=hogwarts,dc=wiz"),
+    # "is_staff": LDAPGroupQuery("cn=Hogwarts Staff,ou=groups,dc=hogwarts,dc=wiz"),
     "is_superuser": LDAPGroupQuery("cn=administrators,ou=groups,dc=hogwarts,dc=wiz"),
 }
 
@@ -179,3 +183,20 @@ LOGIN_URL = "account:login"
 LOGOUT_URL = "account:logout"
 LOGOUT_REDIRECT_URL = "account:login"
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+LDAP_SYNC_URI = AUTH_LDAP_SERVER_URI
+LDAP_SYNC_BASE = "ou=people,dc=hogwarts,dc=wiz"
+LDAP_SYNC_BASE_USER = AUTH_LDAP_BIND_DN
+LDAP_SYNC_BASE_PASS = AUTH_LDAP_BIND_PASSWORD
+LDAP_SYNC_USER_FILTER = "(&(objectClass=inetOrgPerson)(objectClass=hogwartsAttributes))"
+LDAP_SYNC_USER_ATTRIBUTES = {
+    "uid": "uid",
+    "mail": "email",
+    "givenName": "first_name",
+    "sn": "last_name",
+    "employeeNumber": "idnumber",
+    "title": "title",
+    "middleName": "middle_name",
+    "displayName": "common_name",
+    "sex": "sex",
+}
