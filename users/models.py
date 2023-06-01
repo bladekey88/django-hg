@@ -58,17 +58,29 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         "Title", max_length=20, default=Title.UNKNOWN, choices=Title.choices
     )
 
-    def full_name(self, include_middle=False):
+    def full_name(self, include_middle=False, last_name_first=False):
         if include_middle:
-            return f"{self.first_name} {self.middle_name} {self.last_name}"
+            if last_name_first:
+                return f" {self.last_name}, {self.first_name} {self.middle_name}"
+            else:
+                return f"{self.first_name} {self.middle_name} {self.last_name}"
         else:
-            return f"{self.first_name} {self.last_name}"
+            if last_name_first:
+                return f"{self.last_name}, {self.first_name}"
+            else:
+                return f"{self.first_name} {self.last_name}"
 
-    def full_common_name(self, include_middle=False):
+    def full_common_name(self, include_middle=False, last_name_first=False):
         if include_middle:
-            return f"{self.common_name} {self.middle_name} {self.last_name}"
+            if last_name_first:
+                return f" {self.last_name}, {self.common_name} {self.middle_name}"
+            else:
+                return f"{self.common_name} {self.middle_name} {self.last_name}"
         else:
-            return f"{self.common_name} {self.last_name}"
+            if last_name_first:
+                return f"{self.last_name}, {self.common_name} "
+            else:
+                return f"{self.common_name} {self.last_name}"
 
     class Meta:
         verbose_name = "User"
@@ -83,6 +95,13 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def is_student(self):
         try:
             Student.objects.get(user=self)
+            return True
+        except Exception:
+            return False
+
+    def is_school_staff(self):
+        try:
+            Staff.objects.get(user=self)
             return True
         except Exception:
             return False
@@ -123,7 +142,7 @@ class Student(models.Model):
         ],
     )
 
-    class meta:
+    class Meta:
         verbose_name = "Student"
         verbose_name_plural = "Students"
         ordering = ("user__last_name",)
@@ -148,11 +167,11 @@ class Student(models.Model):
     def clean(self, *args, **kwargs):
         USER_IS_STAFF_ERROR = f"""
         {self.user.full_common_name()} cannot be a Student because they
-        already exist as a Staff Member. If you wish to proceed you must delete
-        the Staff Member attributes."""
+        already exist as a Staff Member. If you wish to proceed you must remove
+        the Staff object."""
 
         try:
-            staff_exists = self.user.staff
+            staff_exists = self.user.is_school_staff()
             raise ValidationError(USER_IS_STAFF_ERROR)
         except AttributeError:
             staff_exists = False
@@ -161,7 +180,9 @@ class Student(models.Model):
             print("Good to proceed")
 
     def __str__(self):
-        return f"{self.user.full_common_name()} ({self.user.idnumber} {self.get_year_display()} Year {self.get_house_display()})"
+        return f"""{self.user.full_common_name(True,True)}
+          ({self.user.idnumber} {self.get_year_display()}
+          Year {self.get_house_display()})"""
 
     def __repr__(self):
         return self.user.email
@@ -171,7 +192,11 @@ class QuidditchPlayer(models.Model):
     class Meta:
         verbose_name = "Quidditch Player"
         verbose_name_plural = "Quidditch Players"
-        ordering = ["student__house", "student__user__last_name"]
+        ordering = [
+            "student__house",
+            "student__user__last_name",
+            "student__user__first_name",
+        ]
 
     student = models.OneToOneField(Student, on_delete=models.CASCADE)
     is_captain = models.BooleanField("Is Captain", default=False)
@@ -199,9 +224,9 @@ class QuidditchPlayer(models.Model):
 
     def clean(self, *args, **kwargs):
         USER_IS_NOT_STUDENT_ERROR = f"""
-        {self.student.user.full_common_name()} cannot be a Quidditch Team Member
-        because they are not a Student. If you wish to proceed you must add the
-        Student attributes to the User."""
+        {self.student.user.full_common_name()} cannot be on a Quidditch Team
+        because they are not a Student. If you wish to proceed you must assign the
+        Student object to the User."""
 
         try:
             student_exists = self.student
@@ -221,7 +246,7 @@ class QuidditchPlayer(models.Model):
 class Staff(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
 
-    class meta:
+    class Meta:
         verbose_name = "Staff Member"
         verbose_name_plural = "Staff Members"
         ordering = ("user__last_name",)
@@ -240,16 +265,13 @@ class Staff(models.Model):
     def clean(self, *args, **kwargs):
         USER_IS_STUDENT_ERROR = f"""
         {self.user.full_common_name()} cannot be a Staff Member because they
-        already exist as a Student. If you wish to proceed you must delete
-        the Student attributes."""
+        already exist as a Student. If you wish to proceed you must remove
+        the Student object."""
 
-        try:
-            student_exists = self.user.student
+        student_exists = self.user.is_student()
+        if student_exists:
             raise ValidationError(USER_IS_STUDENT_ERROR)
-        except AttributeError:
-            student_exists = False
-
-        if not student_exists:
+        else:
             print("Good to proceed")
 
     def __str__(self) -> str:
@@ -257,3 +279,49 @@ class Staff(models.Model):
 
     def __repr__(self) -> str:
         return f"{self.user.full_common_name()} ({self.user.idnumber})"
+
+
+class Parent(models.Model):
+    user = models.OneToOneField(
+        CustomUser,
+        on_delete=models.CASCADE,
+    )
+    children = models.ManyToManyField(Student, symmetrical=False)
+    related_parent = models.ManyToManyField(
+        "self",
+        symmetrical=True,
+        blank=True,
+        default=None,
+        max_length=1,
+    )
+
+    def get_children(self):
+        return "\n\r| ".join(
+            [
+                str(child.user.full_name())
+                for child in self.children.all().order_by("user__first_name")
+            ]
+        )
+
+    def get_related_parent(self):
+        return ",".join(
+            [
+                str(parent.user.full_name())
+                for parent in self.related_parent.all().order_by("user__first_name")
+            ]
+        )
+
+    def __str__(self):
+        return f"""{self.user.full_name(True,True)} ({self.user.idnumber})"""
+
+    def clean(self):
+        student_exists = self.user.is_student()
+        staff_exists = self.user.is_school_staff()
+        if student_exists or staff_exists:
+            USER_IS_STUDENT_OR_STAFF_ERROR = f"""
+                {self.user.full_common_name()} cannot be added as a Parent
+                because they already exist as a Student or Staff. If you 
+                wish to proceed you must remove the appropriate object:
+                |Student: {student_exists}|
+                |Staff_exists: {staff_exists}|"""
+            raise ValidationError(USER_IS_STUDENT_OR_STAFF_ERROR)

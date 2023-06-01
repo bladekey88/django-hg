@@ -1,7 +1,8 @@
+from typing import Any, Optional
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import CustomUser, Student, QuidditchPlayer, Staff
+from .models import CustomUser, Student, QuidditchPlayer, Staff, Parent
 from .forms import CustomUserChangeForm, CustomUserCreationForm
 
 
@@ -216,7 +217,15 @@ class StudentAdmin(admin.ModelAdmin):
         ordering="user__last_name",
     )
     def get_full_name(self, obj):
-        return obj.user.full_name(True)
+        return obj.user.full_name(True, True)
+
+    @admin.display(description="First Name")
+    def get_first_name(self, obj):
+        return obj.user.common_name
+
+    @admin.display(description="Last Name")
+    def get_last_name(self, obj):
+        return obj.user.last_name
 
     @admin.display(
         description="Student ID Number",
@@ -251,32 +260,93 @@ class StudentAdmin(admin.ModelAdmin):
         "user__common_name",
         "user__email",
     ]
-    list_display = ["get_full_name", "house", "year", "get_idnumber"]
-    list_filter = ["house", "year"]
-    ordering = (
+    list_display = [
+        "get_idnumber",
+        "get_first_name",
+        "get_last_name",
+        "get_full_name",
         "house",
         "year",
+    ]
+    list_filter = ["house", "year"]
+    ordering = (
+        "user__last_name",
         "user__first_name",
     )
+
+
+class ParentAdmin(admin.ModelAdmin):
+    filter_horizontal = (
+        "children",
+        "related_parent",
+    )
+
+    def get_form(self, request, obj=None, **kwargs):
+        filters = [
+            x.uid
+            for x in CustomUser.objects.all()
+            if not x.is_student() and not x.is_school_staff()
+        ]
+
+        form = super(ParentAdmin, self).get_form(request, obj, **kwargs)
+        if "users.change_parent" in request.user.get_all_permissions():
+            form.base_fields["user"].queryset = CustomUser.objects.filter(
+                uid__in=filters
+            )
+        return form
+
+    def render_change_form(self, request, context, *args, **kwargs):
+        if "users.change_parent" in request.user.get_all_permissions():
+            context["adminform"].form.fields[
+                "related_parent"
+            ].queryset = Parent.objects.exclude(id__exact=context["object_id"])
+            # form.base_fields["related_parent"].queryset = Parent.objects.exclude(id__exact=obj.id)
+        return super(ParentAdmin, self).render_change_form(
+            request,
+            context,
+            *args,
+            **kwargs,
+        )
+
+    @admin.display(
+        description="Parent",
+        ordering="user__last_name",
+    )
+    def get_full_name(self, obj):
+        return f"{obj.user.title} {obj.user.full_name(True, False)}"
+
+    @admin.display(description="First Name")
+    def get_first_name(self, obj):
+        return obj.user.common_name
+
+    @admin.display(description="Last Name")
+    def get_last_name(self, obj):
+        return obj.user.last_name
+
+    @admin.display(
+        description="ID Number",
+    )
+    def get_idnumber(self, obj):
+        return obj.user.idnumber
+
+    @admin.display(description="Number of Children")
+    def get_number_of_children(self, obj):
+        return obj.children.count()
+
+    @admin.display(description="Linked to Parent")
+    def get_related_parent(self, obj):
+        return obj.get_related_parent()
+
+    list_display = [
+        "get_idnumber",
+        "get_full_name",
+        "get_number_of_children",
+        "get_related_parent",
+    ]
 
 
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(QuidditchPlayer, QuidditchPlayerAdmin)
 admin.site.register(Student, StudentAdmin)
 admin.site.register(Staff)
-
-
-# @@admin.register()
-# class Admin(admin.ModelAdmin):
-#     '''Admin View for '''
-
-#     list_display = ('',)
-#     list_filter = ('',)
-#     inlines = [
-#         Inline,
-#     ]
-#     raw_id_fields = ('',)
-#     readonly_fields = ('',)
-#     search_fields = ('',)
-#     date_hierarchy = ''
-#     ordering = ('',)
+admin.site.register(Parent, ParentAdmin)
