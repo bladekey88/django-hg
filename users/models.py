@@ -142,6 +142,8 @@ class Student(models.Model):
         ],
     )
 
+    prefect = models.BooleanField("Is Prefect", default=False)
+
     class Meta:
         verbose_name = "Student"
         verbose_name_plural = "Students"
@@ -164,25 +166,29 @@ class Student(models.Model):
     def is_newt_student(self):
         return self.year >= 6
 
-    def clean(self, *args, **kwargs):
+    def _validate_student_eligiblity(self):
         USER_IS_STAFF_ERROR = f"""
         {self.user.full_common_name()} cannot be a Student because they
         already exist as a Staff Member. If you wish to proceed you must remove
         the Staff object."""
 
-        try:
-            staff_exists = self.user.is_school_staff()
+        if self.user.is_school_staff():  # TODO add parent
             raise ValidationError(USER_IS_STAFF_ERROR)
-        except AttributeError:
-            staff_exists = False
 
-        if not staff_exists:
-            print("Good to proceed")
+    def _validate_prefect(self):
+        USER_INELIGBLE_PREFECT_ERROR = f"""
+        {self.user.full_common_name()} cannot be assigned as a prefect as
+        they are not a Fifth Year, Sixth, or Seventh Year."""
+
+        if self.year < 5 and self.prefect:
+            raise ValidationError(USER_INELIGBLE_PREFECT_ERROR)
+
+    def clean(self, *args, **kwargs):
+        self._validate_student_eligiblity()
+        self._validate_prefect()
 
     def __str__(self):
-        return f"""{self.user.full_common_name(True,True)}
-          ({self.user.idnumber} {self.get_year_display()}
-          Year {self.get_house_display()})"""
+        return f"""{self.user.full_common_name(True,True)} ({self.user.idnumber} {self.get_year_display()} Year {self.get_house_display()})"""
 
     def __repr__(self):
         return self.user.email
@@ -262,6 +268,8 @@ class Staff(models.Model):
         choices=StaffType.choices,
     )
 
+    is_head_of_house = models.BooleanField("Is Head of House", default=False)
+
     def clean(self, *args, **kwargs):
         USER_IS_STUDENT_ERROR = f"""
         {self.user.full_common_name()} cannot be a Staff Member because they
@@ -282,17 +290,22 @@ class Staff(models.Model):
 
 
 class Parent(models.Model):
+    class Meta:
+        verbose_name = "Parent"
+        verbose_name_plural = "Parents"
+
     user = models.OneToOneField(
         CustomUser,
         on_delete=models.CASCADE,
     )
-    children = models.ManyToManyField(Student, symmetrical=False)
+    children = models.ManyToManyField(
+        Student, symmetrical=False, verbose_name="Children", related_name="children_of"
+    )
     related_parent = models.ManyToManyField(
         "self",
         symmetrical=True,
         blank=True,
         default=None,
-        max_length=1,
     )
 
     def get_children(self):
@@ -311,9 +324,6 @@ class Parent(models.Model):
             ]
         )
 
-    def __str__(self):
-        return f"""{self.user.full_name(True,True)} ({self.user.idnumber})"""
-
     def clean(self):
         student_exists = self.user.is_student()
         staff_exists = self.user.is_school_staff()
@@ -325,3 +335,12 @@ class Parent(models.Model):
                 |Student: {student_exists}|
                 |Staff_exists: {staff_exists}|"""
             raise ValidationError(USER_IS_STUDENT_OR_STAFF_ERROR)
+
+    def __str__(self):
+        return f"{self.user.full_name(True,True)} ({self.user.idnumber})"
+
+    def __unicode__(self):
+        return self.__str__()
+
+    def __repr__(self):
+        return self.user.uid

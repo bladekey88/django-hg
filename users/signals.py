@@ -29,6 +29,11 @@ def populate_user_profile(sender, user, ldap_user, **kwargs):
             years = Student.Year
             data["year"] = years.labels.index(year_raw[0].split(" ")[0])
             quidditch_raw = ldap_user.attrs.get("quidditchPlayer")
+            prefect_raw = ldap_user.attrs.get("prefect")[0]
+            if prefect_raw == "TRUE":
+                data["prefect"] = True
+            else:
+                data["prefect"] = False
             if quidditch_raw:
                 if quidditch_raw[0] == "TRUE":
                     try:
@@ -56,41 +61,54 @@ def populate_user_profile(sender, user, ldap_user, **kwargs):
 django_auth_ldap.backend.populate_user.connect(populate_user_profile)
 
 
+#######################
+# USER FIRST TIME LOGIN
+#######################
 @receiver(post_save, sender=CustomUser)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         # Add to All Users
         all_users_group = Group.objects.get(name="All Users")
         instance.groups.add(all_users_group)
+        if instance.ldap_user.attrs.get("employeeType")[0].lower() == "student":
+            # Add to All Students Group
+            all_students_group = Group.objects.get(name="All Students")
+            instance.groups.add(all_students_group)
 
-        try:
-            if instance.ldap_user.attrs.get("employeeType")[0].lower() == "student":
-                # Add to All Students Group
-                all_students_group = Group.objects.get(name="All Students")
-                instance.groups.add(all_students_group)
+            # Create Profile Instance
+            profile = Student.objects.create(user=instance)
+            data = {}
+            house_raw = instance.ldap_user.attrs.get("schoolHouse")
+            houses = Student.House.labels
+            if house_raw[0] in houses:
+                data["house"] = house_raw[0][0:2].upper()
+            year_raw = instance.ldap_user.attrs.get("schoolYear")
+            years = Student.Year
+            data["year"] = years.labels.index(year_raw[0].split(" ")[0])
+            prefect_raw = instance.ldap_user.attrs.get("prefect")[0]
+            if prefect_raw == "TRUE":
+                data["prefect"] = True
+            else:
+                data["prefect"] = False
+            quidditch_raw = instance.ldap_user.attrs.get("quidditchPlayer")
+            print(instance.ldap_user)
+            for key, value in data.items():
+                if value:
+                    setattr(profile, key, value)
+            profile.save()
+            if quidditch_raw[0] == "TRUE":
+                try:
+                    temp_profile = profile.quidditchplayer
+                    print("halt")
+                except Exception:
+                    temp_profile = QuidditchPlayer.objects.create(student=profile)
+                temp_profile.save()
 
-                # Create Profile Instance
-                profile = Student.objects.create(user=instance)
-                data = {}
-                house_raw = instance.ldap_user.attrs.get("schoolHouse")
-                houses = Student.House.labels
-                if house_raw[0] in houses:
-                    data["house"] = house_raw[0][0:2].upper()
-
-                year_raw = instance.ldap_user.attrs.get("schoolYear")
-                years = Student.Year
-                data["year"] = years.labels.index(year_raw[0].split(" ")[0])
-                print(instance.ldap_user)
-                for key, value in data.items():
-                    if value:
-                        setattr(profile, key, value)
-                profile.save()
-
-            elif instance.ldap_user.attrs.get("employeeType")[0].lower() == "staff":
-                # Add to All Students Group
-                all_staff_group = Group.objects.get(name="All Staff")
-                instance.groups.add(all_staff_group)
-        except Exception:
+        elif instance.ldap_user.attrs.get("employeeType")[0].lower() == "staff":
+            # Add to All Students Group
+            all_staff_group = Group.objects.get(name="All Staff")
+            instance.groups.add(all_staff_group)
+        else:
             pass
 
 

@@ -163,6 +163,7 @@ AUTH_LDAP_USER_ATTR_MAP = {
     "quidditchplayer.is_player": "quidditchPlayer",
     "uid": "uid",
     "sex": "sex",
+    "prefect": "prefect",
 }
 
 
@@ -172,8 +173,7 @@ AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
 AUTH_LDAP_GROUP_TYPE = GroupOfNamesType()
 
 AUTH_LDAP_USER_FLAGS_BY_GROUP = {
-    "is_staff": LDAPGroupQuery("cn=students,ou=groups,dc=hogwarts,dc=wiz"),
-    "is_staff": LDAPGroupQuery("cn=Hogwarts Staff,ou=groups,dc=hogwarts,dc=wiz"),
+    "is_staff": LDAPGroupQuery("cn=all users,ou=openfire,ou=groups,dc=hogwarts,dc=wiz"),
     "is_superuser": LDAPGroupQuery("cn=administrators,ou=groups,dc=hogwarts,dc=wiz"),
 }
 
@@ -200,4 +200,5 @@ LDAP_SYNC_USER_ATTRIBUTES = {
     "displayName": "common_name",
     "sex": "sex",
     "title": "title",
+    "prefect": "prefect",
 }

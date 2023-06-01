@@ -12,9 +12,32 @@ class StudentInline(admin.TabularInline):
     verbose_name_plural = "Student"
 
 
+class QuidditchInline(admin.TabularInline):
+    model = QuidditchPlayer
+    readonly_fields = [
+        "team_member_type",
+        "team_position",
+        "is_captain",
+        "is_suspended",
+    ]
+    exclude = ["team_member_type"]
+    fields = ["team_position", "is_captain", "is_suspended"]
+    can_delete = False
+
+
 class StaffInline(admin.TabularInline):
     model = Staff
     verbose_name = "Staff"
+
+
+class ParentInline(admin.TabularInline):
+    model = Parent.children.through
+    verbose_name = "Parent"
+    extra = 0
+    readonly_fields = [
+        "parent",
+    ]
+    can_delete = False
 
 
 class QuidditchPlayerAdmin(admin.ModelAdmin):
@@ -147,6 +170,7 @@ class CustomUserAdmin(UserAdmin):
         "last_login",
         "student__house",
         "student__year",
+        "student__prefect",
         "staff__staff_type",
         "sex",
     )
@@ -212,6 +236,8 @@ class CustomUserAdmin(UserAdmin):
 
 
 class StudentAdmin(admin.ModelAdmin):
+    inlines = [QuidditchInline, ParentInline]
+
     @admin.display(
         description="Student",
         ordering="user__last_name",
@@ -252,7 +278,6 @@ class StudentAdmin(admin.ModelAdmin):
     ]
 
     search_fields = [
-        "user__email",
         "user__uid",
         "user__last_name",
         "user__first_name",
@@ -267,8 +292,13 @@ class StudentAdmin(admin.ModelAdmin):
         "get_full_name",
         "house",
         "year",
+        "prefect",
     ]
-    list_filter = ["house", "year"]
+    list_filter = [
+        "house",
+        "year",
+        "prefect",
+    ]
     ordering = (
         "user__last_name",
         "user__first_name",
@@ -344,9 +374,75 @@ class ParentAdmin(admin.ModelAdmin):
         "get_related_parent",
     ]
 
+    search_fields = [
+        "user__uid",
+        "user__last_name",
+        "user__first_name",
+        "user__middle_name",
+        "user__common_name",
+        "user__email",
+    ]
+
+    ordering = [
+        "user__last_name",
+        "user__first_name",
+    ]
+
+
+class StaffAdmin(admin.ModelAdmin):
+    @admin.display(
+        description="Staff Member",
+        ordering="user__last_name",
+    )
+    def get_full_name(self, obj):
+        return f"{obj.user.title} {obj.user.full_name(True, False)}"
+
+    @admin.display(description="First Name")
+    def get_first_name(self, obj):
+        return obj.user.first_name
+
+    @admin.display(description="Last Name")
+    def get_last_name(self, obj):
+        return obj.user.last_name
+
+    @admin.display(
+        description="ID Number",
+    )
+    def get_idnumber(self, obj):
+        return obj.user.idnumber
+
+    @admin.display(description="Title")
+    def get_title(self, obj):
+        return obj.user.title
+
+    list_display = [
+        "get_idnumber",
+        "get_title",
+        "get_first_name",
+        "get_last_name",
+        "get_full_name",
+        "staff_type",
+        "is_head_of_house",
+    ]
+
+    list_filter = ["staff_type", "is_head_of_house"]
+    search_fields = [
+        "user__uid",
+        "user__last_name",
+        "user__first_name",
+        "user__middle_name",
+        "user__common_name",
+        "user__email",
+    ]
+
+    ordering = [
+        "user__last_name",
+        "user__first_name",
+    ]
+
 
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(QuidditchPlayer, QuidditchPlayerAdmin)
 admin.site.register(Student, StudentAdmin)
-admin.site.register(Staff)
+admin.site.register(Staff, StaffAdmin)
 admin.site.register(Parent, ParentAdmin)
