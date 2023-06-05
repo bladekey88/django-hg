@@ -1,15 +1,24 @@
-from typing import Any, Optional
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-
 from .models import CustomUser, Student, QuidditchPlayer, Staff, Parent
 from .forms import CustomUserChangeForm, CustomUserCreationForm
+from school.models import BasicCourse
 
 
 # Register your models here.
 class StudentInline(admin.TabularInline):
     model = Student
     verbose_name_plural = "Student"
+
+
+class BasicCourseInline(admin.TabularInline):
+    model = BasicCourse
+    verbose_name = "Course I Own"
+    verbose_name_plural = "Courses I Own"
+    max_num = 10
+    extra = 0
+    can_delete = False
+    empty_value_display = "N/A"
 
 
 class QuidditchInline(admin.TabularInline):
@@ -34,10 +43,8 @@ class ParentInline(admin.TabularInline):
     model = Parent.children.through
     verbose_name = "Parent"
     extra = 0
-    readonly_fields = [
-        "parent",
-    ]
     can_delete = False
+    can_add = False
 
 
 class QuidditchPlayerAdmin(admin.ModelAdmin):
@@ -94,7 +101,7 @@ class QuidditchPlayerAdmin(admin.ModelAdmin):
             "Student Information",
             {
                 "fields": ("student",),
-                "description": """ If a student does not appear in the list, 
+                "description": """ If a student does not appear in the list,
                                     it is likely that the user profile has not
                                     been enabled as as student. Navigate to the
                                     users screen and associate a
@@ -127,6 +134,7 @@ class CustomUserAdmin(UserAdmin):
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm
     model = CustomUser
+
     list_display = (
         "idnumber",
         "get_fullname",
@@ -147,10 +155,14 @@ class CustomUserAdmin(UserAdmin):
 
     @admin.display(description="Full Name", ordering="last_name")
     def get_fullname(self, obj):
+        ln = obj.last_name
+        fn = obj.first_name
+        cn = obj.common_name
         if obj.middle_name:
-            return f"{obj.last_name}, {obj.first_name} {obj.middle_name[0]} ({obj.common_name})"
+            mn = obj.middle_name[0]
+            return f"{ln}, {fn}{mn} ({cn})"
         else:
-            return f"{obj.last_name}, {obj.first_name} ({obj.common_name})"
+            return f"{ln}, {fn} ({cn})"
 
     @admin.display(
         description="House",
@@ -194,7 +206,14 @@ class CustomUserAdmin(UserAdmin):
         ),
         (
             "Permissions",
-            {"fields": ("is_staff", "is_active", "groups", "user_permissions")},
+            {
+                "fields": (
+                    "is_staff",
+                    "is_active",
+                    "groups",
+                    "user_permissions",
+                )
+            },
         ),
         ("Important Dates", {"fields": ("date_joined", "last_login")}),
     )
@@ -232,6 +251,7 @@ class CustomUserAdmin(UserAdmin):
         "first_name",
         "last_name",
     )
+    readonly_fields = ["get_fullname"]
     ordering = ("uid",)
 
 
@@ -311,26 +331,32 @@ class ParentAdmin(admin.ModelAdmin):
         "related_parent",
     )
 
+    # Method only show users for 'User' dropdown where they
+    # do not exist already in the Student or Staff Objects.
+    # This applies to both add form and change form.
     def get_form(self, request, obj=None, **kwargs):
-        filters = [
-            x.uid
-            for x in CustomUser.objects.all()
-            if not x.is_student() and not x.is_school_staff()
-        ]
-
         form = super(ParentAdmin, self).get_form(request, obj, **kwargs)
+
+        # We only need to render the change when they have the change
+        # permission. Otherwise for readonly view we can ignore and
+        # avoid running the query.
         if "users.change_parent" in request.user.get_all_permissions():
+            filters = [
+                x.uid
+                for x in CustomUser.objects.all()
+                if not x.is_student() and not x.is_school_staff()
+            ]
             form.base_fields["user"].queryset = CustomUser.objects.filter(
                 uid__in=filters
             )
         return form
 
+    # This method removes the object user from the related parent selection
     def render_change_form(self, request, context, *args, **kwargs):
         if "users.change_parent" in request.user.get_all_permissions():
             context["adminform"].form.fields[
                 "related_parent"
             ].queryset = Parent.objects.exclude(id__exact=context["object_id"])
-            # form.base_fields["related_parent"].queryset = Parent.objects.exclude(id__exact=obj.id)
         return super(ParentAdmin, self).render_change_form(
             request,
             context,
@@ -415,6 +441,7 @@ class StaffAdmin(admin.ModelAdmin):
     def get_title(self, obj):
         return obj.user.title
 
+    inlines = [BasicCourseInline]
     list_display = [
         "get_idnumber",
         "get_title",
@@ -424,8 +451,10 @@ class StaffAdmin(admin.ModelAdmin):
         "staff_type",
         "is_head_of_house",
     ]
-
-    list_filter = ["staff_type", "is_head_of_house"]
+    list_filter = [
+        "staff_type",
+        "is_head_of_house",
+    ]
     search_fields = [
         "user__uid",
         "user__last_name",
@@ -434,7 +463,6 @@ class StaffAdmin(admin.ModelAdmin):
         "user__common_name",
         "user__email",
     ]
-
     ordering = [
         "user__last_name",
         "user__first_name",

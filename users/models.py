@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
-
 from users.managers import CustomUserManager
 
 # Create your models here.
@@ -15,7 +14,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_("Email Address"), unique=True)
     uid = models.CharField("User ID", max_length=20, unique=True)
     idnumber = models.CharField("ID Number", max_length=20, unique=True)
-    is_staff = models.BooleanField("Is Staff", default=False)
+    is_staff = models.BooleanField("Access Managed Area", default=False)
     is_active = models.BooleanField("Is Active", default=True)
     date_joined = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField(blank=True, null=True, default=None)
@@ -119,8 +118,8 @@ class Student(models.Model):
 
     house = models.CharField(
         max_length=2,
-        choices=House.choices,
         default=House.UNSORTED,
+        choices=House.choices,
     )
 
     class Year(models.IntegerChoices):
@@ -188,7 +187,7 @@ class Student(models.Model):
         self._validate_prefect()
 
     def __str__(self):
-        return f"""{self.user.full_common_name(True,True)} ({self.user.idnumber} {self.get_year_display()} Year {self.get_house_display()})"""
+        return f"""{self.user.full_common_name(True,True)} ({self.user.idnumber}-{self.get_year_display()} Year {self.get_house_display()})"""
 
     def __repr__(self):
         return self.user.email
@@ -283,7 +282,7 @@ class Staff(models.Model):
             print("Good to proceed")
 
     def __str__(self) -> str:
-        return f"{self.user.full_common_name()} {self.get_staff_type_display()}"
+        return f"{self.user.full_name(True,True)} ({self.user.idnumber}-{self.get_staff_type_display()})"
 
     def __repr__(self) -> str:
         return f"{self.user.full_common_name()} ({self.user.idnumber})"
