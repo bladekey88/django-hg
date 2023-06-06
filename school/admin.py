@@ -8,10 +8,11 @@ class BasicCourseAdmin(admin.ModelAdmin):
     @admin.display(description="Course Description", empty_value="N/A")
     def get_description(self, obj):
         short_description = obj.description
-        if len(short_description) > 100:
-            return f"{short_description[:100]}..."
-        else:
-            return f"{short_description}"
+        if short_description:
+            if len(short_description) > 100:
+                return f"{short_description[:100]}..."
+            else:
+                return f"{short_description}"
 
     empty_value_display = "-"
     list_display = [
@@ -47,11 +48,16 @@ class BasicCourseAdmin(admin.ModelAdmin):
 
 
 class BasicClassAdmin(admin.ModelAdmin):
+    filter_horizontal = (
+        "teacher",
+        "student",
+    )
+
     @admin.display(
         description="Class Code",
     )
     def get_class_code(self, obj):
-        return obj.class_code()
+        return obj.get_class_code()
 
     list_display = [
         "name",

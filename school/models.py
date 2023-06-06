@@ -1,7 +1,6 @@
 from django.db import models
-from django.utils import timezone
 from django.core.exceptions import ValidationError
-from users.models import Staff
+from users.models import Staff, Student
 
 # Create your models here.
 
@@ -14,8 +13,8 @@ class BasicCourse(models.Model):
             "course_code",
         ]
 
-    name = models.CharField("Course Name", max_length=50)
-    description = models.TextField(
+    name = models.CharField("Course Name", max_length=50, unique=True)
+    description = models.CharField(
         "Description", max_length=2500, null=True, blank=True
     )
     course_code = models.CharField("Course Code", max_length=10, unique=True)
@@ -138,6 +137,9 @@ class SchoolYear(models.Model):
         if delta.days > MAX_DAYS or delta.days < MIN_DAYS:
             raise ValidationError(SCHOOL_YEAR_INVALID_LENGTH_ERROR)
 
+    def get_two_year_format(self):
+        return f"{str(self.start_year)[2:]}{str(self.end_year)[2:]}"
+
     def clean(self, *args, **kwargs):
         self._validate_school_period_date()
         self._validate_school_period_unique()
@@ -154,8 +156,20 @@ class SchoolYear(models.Model):
 
 class BasicClass(models.Model):
     class Meta:
+        ordering = [
+            "name",
+        ]
         verbose_name = "Class"
         verbose_name_plural = "Classes"
+        constraints = [
+            models.UniqueConstraint(
+                name="name_course",
+                fields=[
+                    "name",
+                    "course",
+                ],
+            )
+        ]
 
     name = models.CharField("Class Name", max_length=100, unique=True)
     course = models.ForeignKey(BasicCourse, on_delete=models.PROTECT)
@@ -165,9 +179,33 @@ class BasicClass(models.Model):
         blank=True,
         null=True,
     )
+    teacher = models.ManyToManyField(
+        Staff,
+        limit_choices_to={
+            "staff_type": Staff.StaffType.ACADEMIC,
+        },
+        verbose_name="Professor",
+    )
+    student = models.ManyToManyField(Student, verbose_name="student")
+    class_code = models.CharField(
+        "Class Code",
+        max_length=20,
+        editable=False,
+        default="0001",
+        blank=True,
+        null=True,
+        unique=True,
+    )
 
-    def class_code(self):
-        return f"{self.course.course_code}{timezone.now().year}"
+    def save(self, *args, **kwargs):
+        self.class_code = self.get_class_code()
+        super().save(*args, **kwargs)
+
+    def get_class_code(self):
+        return f"{self.course.course_code}Y{self.school_year.get_two_year_format()}"
 
     def __str__(self):
-        return f"{self.course.name} ({self.course.course_code})"
+        return f"{self.course.name} ({self.get_class_code()})"
+
+    def __repr__(self):
+        return f"{self.name} - {self.get_class_code()}"

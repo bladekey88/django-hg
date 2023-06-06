@@ -2,13 +2,20 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import CustomUser, Student, QuidditchPlayer, Staff, Parent
 from .forms import CustomUserChangeForm, CustomUserCreationForm
-from school.models import BasicCourse
+from school.models import BasicCourse, BasicClass
 
 
 # Register your models here.
 class StudentInline(admin.TabularInline):
     model = Student
     verbose_name_plural = "Student"
+
+
+class BasicClassInline(admin.TabularInline):
+    model = BasicClass.student.through
+    verbose_name = "Class"
+    verbose_name_plural = "Classes"
+    extra = 0
 
 
 class BasicCourseInline(admin.TabularInline):
@@ -19,19 +26,22 @@ class BasicCourseInline(admin.TabularInline):
     extra = 0
     can_delete = False
     empty_value_display = "N/A"
+    readonly_fields = [
+        "course_code",
+        "course_type",
+        "required",
+    ]
 
 
 class QuidditchInline(admin.TabularInline):
     model = QuidditchPlayer
-    readonly_fields = [
+    fields = [
         "team_member_type",
         "team_position",
         "is_captain",
         "is_suspended",
     ]
-    exclude = ["team_member_type"]
-    fields = ["team_position", "is_captain", "is_suspended"]
-    can_delete = False
+    extra = 0
 
 
 class StaffInline(admin.TabularInline):
@@ -44,7 +54,6 @@ class ParentInline(admin.TabularInline):
     verbose_name = "Parent"
     extra = 0
     can_delete = False
-    can_add = False
 
 
 class QuidditchPlayerAdmin(admin.ModelAdmin):
@@ -256,7 +265,7 @@ class CustomUserAdmin(UserAdmin):
 
 
 class StudentAdmin(admin.ModelAdmin):
-    inlines = [QuidditchInline, ParentInline]
+    inlines = [QuidditchInline, ParentInline, BasicClassInline]
 
     @admin.display(
         description="Student",

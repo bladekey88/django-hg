@@ -72,12 +72,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def full_common_name(self, include_middle=False, last_name_first=False):
         if include_middle:
             if last_name_first:
-                return f" {self.last_name}, {self.common_name} {self.middle_name}"
+                return f"{self.last_name}, {self.common_name} {self.middle_name}"
             else:
                 return f"{self.common_name} {self.middle_name} {self.last_name}"
         else:
             if last_name_first:
-                return f"{self.last_name}, {self.common_name} "
+                return f"{self.last_name}, {self.common_name}"
             else:
                 return f"{self.common_name} {self.last_name}"
 
@@ -107,6 +107,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 
 class Student(models.Model):
+    class Meta:
+        verbose_name = "Student"
+        verbose_name_plural = "Students"
+        ordering = ("user__last_name",)
+
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
 
     class House(models.TextChoices):
@@ -143,21 +148,16 @@ class Student(models.Model):
 
     prefect = models.BooleanField("Is Prefect", default=False)
 
-    class Meta:
-        verbose_name = "Student"
-        verbose_name_plural = "Students"
-        ordering = ("user__last_name",)
-
-    def is_sorted(self) -> bool:
+    def is_sorted(self):
         return self.house in {
-            House.GRYFFINDOR,
-            House.HUFFLEPUFF,
-            House.RAVENCLAW,
-            House.SLYTHERIN,
+            self.House.GRYFFINDOR,
+            self.House.HUFFLEPUFF,
+            self.House.RAVENCLAW,
+            self.House.SLYTHERIN,
         }
 
     def is_unsorted(self) -> bool:
-        return self.house in {House.UNSORTED}
+        return self.house in {self.House.UNSORTED}
 
     def is_owl_student(self):
         return self.year <= 5
@@ -175,12 +175,18 @@ class Student(models.Model):
             raise ValidationError(USER_IS_STAFF_ERROR)
 
     def _validate_prefect(self):
-        USER_INELIGBLE_PREFECT_ERROR = f"""
+        USER_YEAR_INELIGBLE_PREFECT_ERROR = f"""
         {self.user.full_common_name()} cannot be assigned as a prefect as
         they are not a Fifth Year, Sixth, or Seventh Year."""
+        USER_UNSORTED_INELIGBLE_PREFECT_ERROR = f"""
+        {self.user.full_common_name()} cannot be assigned as a prefect as
+        they have not been sorted into a House."""
 
         if self.year < 5 and self.prefect:
-            raise ValidationError(USER_INELIGBLE_PREFECT_ERROR)
+            raise ValidationError(USER_YEAR_INELIGBLE_PREFECT_ERROR)
+
+        if self.house == self.House.UNSORTED and self.prefect:
+            raise ValidationError(USER_UNSORTED_INELIGBLE_PREFECT_ERROR)
 
     def clean(self, *args, **kwargs):
         self._validate_student_eligiblity()
@@ -230,8 +236,8 @@ class QuidditchPlayer(models.Model):
     def clean(self, *args, **kwargs):
         USER_IS_NOT_STUDENT_ERROR = f"""
         {self.student.user.full_common_name()} cannot be on a Quidditch Team
-        because they are not a Student. If you wish to proceed you must assign the
-        Student object to the User."""
+        because they are not a Student. If you wish to proceed you must assign
+        the Student object to the User."""
 
         try:
             student_exists = self.student
@@ -298,7 +304,10 @@ class Parent(models.Model):
         on_delete=models.CASCADE,
     )
     children = models.ManyToManyField(
-        Student, symmetrical=False, verbose_name="Children", related_name="children_of"
+        Student,
+        symmetrical=False,
+        verbose_name="Children",
+        related_name="children_of",
     )
     related_parent = models.ManyToManyField(
         "self",
@@ -329,7 +338,7 @@ class Parent(models.Model):
         if student_exists or staff_exists:
             USER_IS_STUDENT_OR_STAFF_ERROR = f"""
                 {self.user.full_common_name()} cannot be added as a Parent
-                because they already exist as a Student or Staff. If you 
+                because they already exist as a Student or Staff. If you
                 wish to proceed you must remove the appropriate object:
                 |Student: {student_exists}|
                 |Staff_exists: {staff_exists}|"""
