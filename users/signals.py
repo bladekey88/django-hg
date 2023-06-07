@@ -106,9 +106,13 @@ def create_user_profile(sender, instance, created, **kwargs):
                     temp_profile.save()
 
             elif instance.ldap_user.attrs.get("employeeType")[0].lower() == "staff":
-                # Add to All Students Group
+                # Add to All Staff Group
                 all_staff_group = Group.objects.get(name="All Staff")
                 instance.groups.add(all_staff_group)
+            elif instance.ldap_user.attrs.get("employeeType")[0].lower() == "parent":
+                # Add to All Parent Group
+                all_parents_group = Group.objects.get(name="All Parents")
+                instance.groups.add(all_parents_group)
             else:
                 pass
         except AttributeError:

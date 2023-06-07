@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Child Information for {{request.user}}</title>
+
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
+
+            * {
+
+                box-sizing: border-box;
+                font-family: Raleway;
+                padding: 0;
+                margin: 0;
+            }
+
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            table {
+                border-collapse: collapse;
+                margin: 25px 0;
+                font-size: 0.9em;
+                font-family: sans-serif;
+                min-width: 400px;
+                box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+            }
+
+            thead tr {
+                background-color: #009879;
+                color: #ffffff;
+                text-align: left;
+            }
+
+            td,
+            thead {
+                padding: 12px 15px;
+            }
+
+            tbody tr {
+                border-bottom: 1px solid #dddddd;
+            }
+
+            tbody tr:nth-of-type(even) {
+                background-color: #f3f3f3;
+            }
+
+            tbody tr:last-of-type {
+                border-bottom: 2px solid #009879;
+            }
+
+
+            tbody>tr:hover {
+                color: #009879;
+                font-weight: bolder;
+                background-color: rgb(250, 250, 78, 0.6);
+            }
+        </style>
+
+    </head>
+
+    <body>
+        <div class="children">
+            {% for object in object_list %}
+            <table class="children-info">
+                <thead>
+                    <tr>
+                        <td>Full Name</td>
+                        <td>House</td>
+                        <td>Year</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for child in object.children.all %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'school:children' child.user.id %}">{{child.user.full_name}}</a>
+                        </td>
+                        <td>{{child.get_house_display}}</td>
+                        <td>{{child.get_year_display}}</td>
+                    </tr>
+                    {% endfor child %}
+                </tbody>
+            </table>
+            {% endfor object %}
+        </div>
+    </body>
+
+</html>

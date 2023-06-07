@@ -57,7 +57,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         "Title", max_length=20, default=Title.UNKNOWN, choices=Title.choices
     )
 
-    def full_name(self, include_middle=False, last_name_first=False):
+    def full_name(self, include_middle=True, last_name_first=False):
         if include_middle:
             if last_name_first:
                 return f" {self.last_name}, {self.first_name} {self.middle_name}"
@@ -101,6 +101,13 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def is_school_staff(self):
         try:
             Staff.objects.get(user=self)
+            return True
+        except Exception:
+            return False
+
+    def is_parent(self):
+        try:
+            Parent.objects.get(user=self)
             return True
         except Exception:
             return False
@@ -316,13 +323,16 @@ class Parent(models.Model):
         default=None,
     )
 
-    def get_children(self):
-        return "\n\r| ".join(
-            [
-                str(child.user.full_name())
-                for child in self.children.all().order_by("user__first_name")
-            ]
-        )
+    def get_children(self, raw=False):
+        if raw:
+            return [child for child in self.children.all().order_by("user__first_name")]
+        else:
+            return "\n\r| ".join(
+                [
+                    str(child.user.full_name())
+                    for child in self.children.all().order_by("user__first_name")
+                ]
+            )
 
     def get_related_parent(self):
         return ",".join(
