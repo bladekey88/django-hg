@@ -1,67 +1,80 @@
 {% extends "base.html" %}
+{% load random_images %}
 {% block title %}Login{% endblock %}
 {% block pagestyle %}
 <style>
-    body {background: rgba(0, 0, 0,0.15) !important}
-    #content{background: rgba(255,255,255,0.5)}
+    body {
+        background: rgba(0, 0, 0, 0.15);
+        background-image: url("{% get_random_bing_image %}");
+        background-size: cover;
+    }
+
+    #content {
+        background: rgba(255, 255, 255, 0.5)
+    }
 </style>
 {% endblock pagestyle %}
 {% block navbar %}{% endblock navbar %}
 
-{% block contentclass %} container mt-5  p-0 col-lg-6 {% endblock contentclass %}
+{% block contentclass %} container mt-5 p-0 col-lg-6 {% endblock contentclass %}
 
-{% block content %}       
-    <div class="border border-secondary border-1 px-5 py-3 m-0 shadow shadow-lg text-center">
-        <h1 class="text-start h2 fw-bolder text-body-secondary border-0 border-bottom border-2 mb-2">LOGIN</h1>        
-        <div class="mt-1 p-2 rounded-0 align-middle">
-            {% if form.non_field_errors  %}
+{% block content %}
+
+
+<div class="border border-secondary border-1 px-5 py-3 m-0 shadow shadow-lg text-center">
+    <h1 class="text-start h2 fw-bolder text-body-secondary border-0 border-bottom border-2 mb-2">LOGIN</h1>
+    <div class="mt-1 p-2 rounded-0 align-middle">
+        {% if form.non_field_errors  %}
         <div class="row">
-            <div class="align-middle d-flex p-0 m-0 py-2 my-3  rounded-0 alert alert-danger border-0 border-start border-end border-danger border-5 shadow" role="alert">                                                                                     
-                <div class="col-xs-auto p-0 m-0 g-0 me-1">          
+            <div class="align-middle d-flex p-0 m-0 py-2 my-3  rounded-0 alert alert-danger border-0 border-start border-end border-danger border-5 shadow"
+                role="alert">
+                <div class="col-xs-auto p-0 m-0 g-0 me-1">
                     <i class=" h5 text-danger fw-bold bi bi-exclamation-triangle-fill ms-2  flex-shrink-1 me-1"></i>
                 </div>
                 <div class="col-10 text-start">
                     {% for error in form.non_field_errors  %}
-                    <span class="h6">{{ error|escape }}</span></br>    
+                    <span class="h6">{{ error|escape }}</span></br>
                     {% endfor %}
                 </div>
-            </div>          
+            </div>
         </div>
-        
+
         {% endif %}
-        <form class="form " action="{% url 'account:login' %}" method="post" id="login" >                    
-            <div class="row mb-3">               
-                <label for="username" class="d-flex justify-content-between m-0 p-0 text-start text-body-secondary fw-lighter form-label">
+        <form class="form " action="{% url 'account:login' %}" method="post" id="login">
+            <div class="row mb-3">
+                <label for="username"
+                    class="d-flex justify-content-between m-0 p-0 text-start text-body-secondary fw-lighter form-label">
                     {{form.username.label}}
-                    {% if form.username.errors  %}              
+                    {% if form.username.errors  %}
                     <span class="px-2 bg-warning-subtle text-danger fw-bolder small text-start">
                         {% for error in form.username.errors %}
                         {{ error }}
                         {% endfor %}
                     </span>
                     {% endif %}
-                </label>                               
-                {{form.username}}                    
+                </label>
+                {{form.username}}
             </div>
             <div class="row mb-3">
-            <label for="password" class="d-flex justify-content-between m-0 p-0 text-start text-body-secondary fw-lighter form-label">
-                {{form.password.label}}
-                {% if form.password.errors  %}              
-                <span class="px-2 bg-warning-subtle text-danger fw-bolder small text-start">
-                    {% for error in form.password.errors %}
-                    {{ error }}
-                    {% endfor %}
-                </span>
-                {% endif %}
-            </label>               
-                    {{form.password}}               
+                <label for="password"
+                    class="d-flex justify-content-between m-0 p-0 text-start text-body-secondary fw-lighter form-label">
+                    {{form.password.label}}
+                    {% if form.password.errors  %}
+                    <span class="px-2 bg-warning-subtle text-danger fw-bolder small text-start">
+                        {% for error in form.password.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </span>
+                    {% endif %}
+                </label>
+                {{form.password}}
             </div>
             {% csrf_token %}
             <div class="row mt-4 col-md-8 offset-md-2">
                 <input type="hidden" name="next" value="{{ next }}" />
                 <button type="submit" class="btn btn-primary border-primary">Log In</button>
             </div>
-        </form>        
-        </div>
+        </form>
     </div>
+</div>
 {% endblock %}

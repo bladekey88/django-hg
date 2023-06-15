@@ -14,7 +14,7 @@ urlpatterns = [
         name="parent_childlist",
     ),
     path(
-        "parent/child/<int:pk>/",
+        "parent/children/<int:pk>/",
         views.Child.as_view(),
         name="children",
     ),

@@ -11,6 +11,7 @@ urlpatterns = [
         auth_views.LoginView.as_view(
             template_name="account/login.html",
             authentication_form=UserLoginForm,
+            redirect_authenticated_user=True,
         ),
         name="login",
     ),

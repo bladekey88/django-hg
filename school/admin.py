@@ -59,11 +59,26 @@ class BasicClassAdmin(admin.ModelAdmin):
     def get_class_code(self, obj):
         return obj.get_class_code()
 
+    @admin.display(description="Number of Students")
+    def get_student_exist(self, obj):
+        if obj.student.count() > 0:
+            return obj.student.count()
+        else:
+            return "None"
+
     list_display = [
         "name",
         "get_class_code",
         "course",
+        "get_student_exist",
     ]
+
+    search_fields = [
+        "name",
+        "class_code",
+    ]
+
+    ordering = ["class_code"]
 
 
 class SchoolYearAdmin(admin.ModelAdmin):

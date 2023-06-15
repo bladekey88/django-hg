@@ -186,7 +186,11 @@ class BasicClass(models.Model):
         },
         verbose_name="Professor",
     )
-    student = models.ManyToManyField(Student, verbose_name="student")
+    student = models.ManyToManyField(
+        Student,
+        verbose_name="student",
+        blank=True,
+    )
     class_code = models.CharField(
         "Class Code",
         max_length=20,
