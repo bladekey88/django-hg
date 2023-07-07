@@ -216,7 +216,11 @@ class QuidditchPlayer(models.Model):
             "student__user__first_name",
         ]
 
-    student = models.OneToOneField(Student, on_delete=models.CASCADE)
+    student = models.OneToOneField(
+        Student,
+        on_delete=models.CASCADE,
+        unique=True,
+    )
     is_captain = models.BooleanField("Is Captain", default=False)
     is_suspended = models.BooleanField("Is Suspended", default=False)
 
@@ -245,14 +249,30 @@ class QuidditchPlayer(models.Model):
         {self.student.user.full_common_name()} cannot be on a Quidditch Team
         because they are not a Student. If you wish to proceed you must assign
         the Student object to the User."""
+        TOO_MANY_CAPTAINS_ERROR = f"""
+        There are already four Quidditch Captains assigned, therefore this 
+        Student cannot be saved as a Captain."""
+        FIRST_YEAR_STUDENT_ERROR = f"""
+        First Year Students are not permitted to play on Quidditch Teams"""
 
         try:
             student_exists = self.student
         except AttributeError:
             raise ValidationError(USER_IS_NOT_STUDENT_ERROR)
 
+        if self.student.year < 2:
+            raise ValidationError(FIRST_YEAR_STUDENT_ERROR)
+
+        if self.is_captain:
+            current_captains = QuidditchPlayer.objects.filter(is_captain=True)
+            if current_captains.count() == 4 and self not in current_captains:
+                raise ValidationError(TOO_MANY_CAPTAINS_ERROR)
+
         if student_exists:
             return super(QuidditchPlayer, self).save(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        self.clean()
 
     def __str__(self) -> str:
         return f"{self.student.user.common_name} {self.student.user.last_name}"

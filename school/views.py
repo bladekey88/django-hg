@@ -1,9 +1,16 @@
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.contrib.auth.mixins import (
+    PermissionRequiredMixin,
+    LoginRequiredMixin,
+    UserPassesTestMixin,
+)
 from django.http import HttpResponse, HttpResponseForbidden
 from django.views.generic import ListView, DetailView
-from users.models import Parent, CustomUser, Student
+from django.views.generic.edit import CreateView, DeleteView
+from users.models import Parent, CustomUser
+from school.models import BasicCourse
+from django.urls import reverse_lazy
 
 
 # Create your views here.
@@ -23,25 +30,31 @@ def staff(request):
         return HttpResponse(f"Welcome Staff {request.user}")
 
 
-@login_required
-def parent(request):
-    if not request.user.is_parent() and not request.user.is_superuser:
-        return redirect("school:home")
-    else:
-        return HttpResponse(f"Welcome Parent {request.user}")
-
-
-class ParentChild(PermissionRequiredMixin, ListView):
+class ParentLandingView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Parent
     permission_required = [
         "users.view_parent",
     ]
+    template_name = "users/parents_landing.html"
+
+    def handle_no_permission(self):
+        return redirect("school:home")
+
+
+class ParentChild(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = Parent
+    permission_required = [
+        "users.view_parent",
+    ]
+    template_name = "users/parent_list.html"
 
     def get_queryset(self):
-        return Parent.objects.filter(user=self.request.user)
+        return (
+            Parent.objects.get(user=self.request.user).children.all().order_by("-year")
+        )
 
 
-class Child(PermissionRequiredMixin, DetailView):
+class Child(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = CustomUser
     permission_required = ["users.view_student", "users.view_parent"]
 
@@ -63,6 +76,48 @@ class Child(PermissionRequiredMixin, DetailView):
                 return user
             else:
                 return get_object_or_404(CustomUser, pk=-1)
+
+
+class CoursesView(UserPassesTestMixin, ListView):
+    model = BasicCourse
+    template_name = "school/course_list.html"
+
+    def test_func(self):
+        return self.request.user.is_school_staff() or self.request.user.is_superuser
+
+
+class CourseView(PermissionRequiredMixin, UserPassesTestMixin, DetailView):
+    permission_required = ["school.view_basiccourse"]
+    model = BasicCourse
+    template_name = "school/course_detail.html"
+    slug_url_kwarg = "slug"
+
+    def test_func(self):
+        return self.request.user.is_school_staff() or self.request.user.is_superuser
+
+
+class CourseAdd(PermissionRequiredMixin, CreateView):
+    permission_required = ["school.add_basiccourse"]
+    model = BasicCourse
+    fields = [
+        "name",
+        "course_code",
+        "course_type",
+        "required",
+        "description",
+    ]
+    template_name = "school/course_add.html"
+
+
+class CourseDelete(PermissionRequiredMixin, DeleteView):
+    permission_required = [
+        "school.delete_basiccourse",
+        "school.delete_basicclass",
+    ]
+    permission_denied_message = "Access Forbidden"
+    model = BasicCourse
+    template_name = "school/course_detail.html"
+    success_url = reverse_lazy("school:courses_view")
 
 
 def home(request):

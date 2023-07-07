@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Add Course{% endblock title %}
+{% block pagestyle %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
+
+    * {
+
+        box-sizing: border-box;
+        font-family: Raleway;
+        padding: 0;
+        margin: 0;
+    }
+
+    .add-form {
+        background-color: #fefefe;
+        padding: 0px 2rem;
+        min-width: 50%;
+    }
+
+    form>div {
+        margin: 0.75rem 0;
+    }
+
+    input[type="submit"] {
+        background-color: rgb(52, 52, 146);
+        color: white;
+        border: 3px blue solid;
+        border-radius: 5px;
+        margin: 2rem 0;
+    }
+
+    input,
+    select,
+    textarea {
+        font: 1.25rem / 1.5 sans-serif;
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .errorlist li::before {
+        content: "Error: ";
+    }
+
+    .errorlist li {
+        color: darkred;
+        font-weight: bolder;
+    }
+</style>
+{% endblock pagestyle %}
+
+{% block contentclass %}container py-3 my-2{% endblock contentclass %}
+{% block content %}
+<h1>Add Course</h1>
+<div class="add-form">
+    <form action="" method="post">
+        {% csrf_token %}
+        {{form.as_div}}
+        <input type="submit" value="Submit Form">
+    </form>
+</div>
+{% endblock content %}

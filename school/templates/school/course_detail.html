@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}{{object}}{% endblock title %}
+{% block pagestyle %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
+
+    * {
+
+        box-sizing: border-box !important;
+        font-family: Raleway;
+        padding: 0;
+        margin: 0;
+    }
+
+    .custom-container {
+        border: 1px solid #eeeeee;
+        margin-left: 15em;
+        margin-top: 3rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0px;
+        align-items: center;
+        vertical-align: middle;
+        width: 75%;
+        box-shadow: 10px solid black;
+    }
+
+    table {
+        border-collapse: collapse;
+        margin: 25px 0;
+        font-size: 0.9em;
+        font-family: sans-serif;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+        min-width: 100%;
+    }
+
+    thead tr {
+        background-color: #009879;
+        color: #ffffff;
+        text-align: left;
+    }
+
+    td,
+    th,
+    thead {
+        padding: 12px 15px;
+        text-align: center;
+    }
+
+    tbody tr {
+        border-bottom: 1px solid #dddddd;
+    }
+
+    tbody tr:nth-of-type(even) {
+        background-color: #f3f3f3;
+    }
+
+    tbody tr:last-of-type {
+        border-bottom: 2px solid #009879;
+    }
+
+    h1 {
+        text-align: center;
+    }
+
+    tbody>tr:hover {
+        color: #009879;
+        font-weight: bolder;
+        background-color: rgb(250, 250, 78, 0.6);
+    }
+
+    td {
+        padding: 1rem 3rem 1rem;
+
+    }
+
+    td>a {
+        text-decoration: none;
+    }
+
+    .extra-info {
+        margin-top: 2rem;
+    }
+
+    .extra-info h5 {
+        border-bottom: 1px solid #ccc;
+    }
+</style>
+{% endblock pagestyle %}
+{% block contentclass %}container px-3 my-5 {% endblock contentclass %}
+{% block content %}
+<div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
+    <h3>
+        {{object.name}} ({{object.course_code}})
+    </h3>
+    <a class=" text-decoration-none" href="{% url 'school:courses_view' %}">Back to Course List</a>
+</div>
+<p>{{object.description}}</p>
+<div class="extra-info">
+    <h5>Additional Information</h5>
+    <table>
+        <thead>
+            <tr>
+                <th>Course Code</th>
+                <th>Course Type</th>
+                <th>Course Category</th>
+                <th>Owner</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{object.course_code}}</td>
+                <td>{{object.course_type}}</td>
+                <td>{{object.get_required_display}}</td>
+
+                <td>
+                    {% if object.owner %}
+                    <a href="{% url 'account:profile_other_user' object.owner.user.uid %}">
+                        {{object.owner.user.full_name}}
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% if object.basicclass_set.all %}
+            <thead>
+                <tr class="bg-dark">
+                    <th colspan="4">Associated Classes</th>
+                </tr>
+                <tr>
+                    <th>Class Name</th>
+                    <th>Class Code</th>
+                    <th>School Year</th>
+                    <th>Teachers</th>
+                </tr>
+            </thead>
+            {% for classes in object.basicclass_set.all %}
+            <tr>
+                <td>{{classes.name}}</td>
+                <td>{{classes.class_code}}</td>
+                <td>{{classes.school_year}}</td>
+                <td>
+                    <ul class="list-unstyled">
+                        {% for teacher in classes.teacher.all %}
+                        <li>
+                            <a class="text-decoration-none"
+                                href="{% url 'account:profile_other_user' teacher.user.uid %}">
+                                {{teacher.user.full_name}}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </td>
+            </tr>
+            {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+    <div class="card card-secondary">
+        <div class="card-header">
+            <h6>Course Management</h6>
+        </div>
+        <div class="card-body">
+            <div class="edit-course mb-2 py-2 px-4 d-block bg-light border border-dark border-1  rounded">
+                <h4>Edit Course</h4>
+                <input class="btn btn-outline-primary border-dark" type="submit" value="Confirm">
+            </div>
+            {% if perms.school.delete_basiccourse %}
+            <div class="delete-course mt-3 py-2 px-4 d-block bg-light border border-danger border-1  rounded">
+                <h4>Delete Course</h4>
+                <div class="alert alert-danger text-danger fw-bold h6 border-3 border-danger border-rounded-0">
+                    Deletion is irreversible
+                </div>
+                <form method="post" action="{% url 'school:course_delete' object.course_code  %}">
+                    {% csrf_token %}
+                    <p>Are you sure you want to delete "{{ object }}"?</p>
+                    {{ form }}
+                    <input class="btn btn-danger border-dark" type="submit" value="Confirm">
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+
+
+    {% endblock content %}

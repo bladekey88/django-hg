@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Child Information for {{request.user}} {% endblock title %}
+{% block title %}Courses{% endblock title %}
 {% block pagestyle %}
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
@@ -26,8 +26,9 @@
     }
 
     table {
+        width: 100%;
         border-collapse: collapse;
-        margin: 25px 0;
+        margin: 0 0 25px 0;
         font-size: 0.9em;
         font-family: sans-serif;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
@@ -78,33 +79,30 @@
     }
 </style>
 {% endblock pagestyle %}
-
-</head>
-{% block contentclass %}d-flex{% endblock contentclass %}
+{% block contentclass %}container px-3 my-5 {% endblock contentclass %}
 {% block content %}
-<div class="custom-container">
-    <h1>Associated to you</h1>
-    <div class="children">
-        <table class="children-info">
-            <thead>
-                <tr>
-                    <td>Full Name</td>
-                    <td>House</td>
-                    <td>Year</td>
-                </tr>
-            </thead>
-            <tbody>
-                {% for object in object_list %}
-                <tr>
-                    <td>
-                        <a href="{% url 'school:children' object.user.id %}">{{object.user.full_name}}</a>
-                    </td>
-                    <td>{{object.get_house_display}}</td>
-                    <td>{{object.get_year_display}}</td>
-                </tr>
-                {% endfor object %}
-            </tbody>
-        </table>
-    </div>
+<div class="d-flex align-items-center justify-content-between">
+    <h3>List Of Courses</h3>
+    <h3>
+        <a class="btn btn-primary text-decoration-none fw-bold border-primarys border-3"
+            href="{% url 'school:course_add' %}">
+            Add Course
+        </a>
+    </h3>
 </div>
+
+<table>
+    <thead>
+        <th>Course Name</th>
+        <th>Course Code</th>
+    </thead>
+    <tbody>
+        {%for object in object_list %}
+        <tr>
+            <td><a href="{% url 'school:course_detail' object.slug %}">{{object.name}}</a></td>
+            <td>{{object.course_code}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock content %}

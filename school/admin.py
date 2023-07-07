@@ -14,7 +14,8 @@ class BasicCourseAdmin(admin.ModelAdmin):
             else:
                 return f"{short_description}"
 
-    empty_value_display = "-"
+    list_per_page = 10
+    empty_value_display = "<No Value>"
     list_display = [
         "name",
         "course_code",
@@ -33,6 +34,10 @@ class BasicCourseAdmin(admin.ModelAdmin):
         "name",
         "course_code",
     ]
+
+    prepopulated_fields = {
+        "slug": ("course_code",),
+    }
 
     def has_change_permission(self, request, obj=None):
         if obj is not None:
@@ -68,6 +73,7 @@ class BasicClassAdmin(admin.ModelAdmin):
 
     list_display = [
         "name",
+        "class_code",
         "get_class_code",
         "course",
         "get_student_exist",
@@ -78,7 +84,7 @@ class BasicClassAdmin(admin.ModelAdmin):
         "class_code",
     ]
 
-    ordering = ["class_code"]
+    ordering = ["name"]
 
 
 class SchoolYearAdmin(admin.ModelAdmin):

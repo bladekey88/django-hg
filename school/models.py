@@ -1,5 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.urls import reverse
+
 from users.models import Staff, Student
 
 # Create your models here.
@@ -14,7 +16,7 @@ class BasicCourse(models.Model):
         ]
 
     name = models.CharField("Course Name", max_length=50, unique=True)
-    description = models.CharField(
+    description = models.TextField(
         "Description", max_length=2500, null=True, blank=True
     )
     course_code = models.CharField("Course Code", max_length=10, unique=True)
@@ -58,6 +60,11 @@ class BasicCourse(models.Model):
         blank=True,
     )
 
+    slug = models.SlugField(
+        null=False,
+        unique=True,
+    )
+
     def _validate_course_category(self):
         """The required field is only valid at OWL
         as any electives do not apply outside of that"""
@@ -81,6 +88,9 @@ class BasicCourse(models.Model):
 
     def __repr__(self):
         return self.name
+
+    def get_absolute_url(self):
+        return reverse("course_detail", kwargs={"slug": self.slug})
 
 
 class SchoolYear(models.Model):
