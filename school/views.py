@@ -1,3 +1,5 @@
+from typing import Any, Optional
+from django.db import models
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import (
@@ -5,12 +7,13 @@ from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     UserPassesTestMixin,
 )
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 from django.views.generic import ListView, DetailView
-from django.views.generic.edit import CreateView, DeleteView
+from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from users.models import Parent, CustomUser
-from school.models import BasicCourse
+from school.models import BasicCourse, BasicClass
 from django.urls import reverse_lazy
+from school.forms import CourseUpdateForm, ClassAddForm
 
 
 # Create your views here.
@@ -78,10 +81,12 @@ class Child(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
                 return get_object_or_404(CustomUser, pk=-1)
 
 
-class CoursesView(UserPassesTestMixin, ListView):
+class CoursesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = BasicCourse
     template_name = "school/course_list.html"
 
+    # Use UserPassesTestMixin here rather than perm check
+    # as Students also have that perm in their group
     def test_func(self):
         return self.request.user.is_school_staff() or self.request.user.is_superuser
 
@@ -105,8 +110,35 @@ class CourseAdd(PermissionRequiredMixin, CreateView):
         "course_type",
         "required",
         "description",
+        "owner",
     ]
     template_name = "school/course_add.html"
+    raise_exception = True
+    success_message = "Course created successfully."
+
+    def form_valid(self, form):
+        if not form.instance.owner:
+            form.instance.owner = self.request.user
+        return super().form_valid(form)
+
+
+class CourseEdit(PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
+    permission_required = [
+        "school.change_basiccourse",
+    ]
+    model = BasicCourse
+    template_name = "school/course_edit.html"
+    form_class = CourseUpdateForm
+
+    def test_func(self):
+        course = self.get_object()
+        if self.request.user == course.owner.user:
+            return True
+        elif (
+            self.request.user.is_superuser
+            or self.request.user.groups.filter(name="Head of House").exists()
+        ):
+            return True
 
 
 class CourseDelete(PermissionRequiredMixin, DeleteView):
@@ -116,10 +148,63 @@ class CourseDelete(PermissionRequiredMixin, DeleteView):
     ]
     permission_denied_message = "Access Forbidden"
     model = BasicCourse
-    template_name = "school/course_detail.html"
+    template_name = "school/course_delete.html"
     success_url = reverse_lazy("school:courses_view")
 
 
+# Class Section
+class ClassesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = BasicClass
+    template_name = "school/class_list_all.html"
+
+    def test_func(self):
+        return self.request.user.is_school_staff() or self.request.user.is_superuser
+
+
+class ClassView(PermissionRequiredMixin, UserPassesTestMixin, DetailView):
+    permission_required = ["school.view_basicclass"]
+    model = BasicClass
+    template_name = "school/class_detail.html"
+    slug_url_kwarg = "class_slug"
+
+    def test_func(self):
+        return self.request.user.is_school_staff() or self.request.user.is_superuser
+
+
+class ClassAdd(PermissionRequiredMixin, CreateView):
+    permission_required = ["school.view_basicclass"]
+    model = BasicClass
+    form_class = ClassAddForm
+    template_name = "school/class_add.html"
+    raise_exception = True
+    success_message = "Class created successfully."
+
+    def get_context_data(self, **kwargs):
+        context = super(ClassAdd, self).get_context_data(**kwargs)
+        context["slug"] = self.kwargs["slug"]
+        return context
+
+    def form_valid(self, form):
+        form.instance.course = BasicCourse.objects.get(slug=self.kwargs["slug"])
+        form.save()
+        return super(ClassAdd, self).form_valid(form)
+
+
+class ClassDelete(PermissionRequiredMixin, DeleteView):
+    permission_required = [
+        "school.delete_basicclass",
+    ]
+    permission_denied_message = "Access Forbidden"
+    model = BasicClass
+    template_name = "school/class_delete.html"
+    slug_url_kwarg = "class_slug"
+
+    def get_success_url(self):
+        course_id = self.kwargs["slug"]
+        return reverse_lazy("school:course_detail", kwargs={"slug": course_id})
+
+
+# Homepage
 def home(request):
     if request.user.is_anonymous:
         return HttpResponseForbidden("Access Denied")

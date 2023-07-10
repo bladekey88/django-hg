@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Add Course{% endblock title %}
+{% block title %}Add Class to {{slug}} {% endblock title %}
 {% block pagestyle %}
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
@@ -58,9 +58,10 @@
 
 {% block contentclass %}container px-3 my-5 {% endblock contentclass %}
 {% block content %}
+
 <div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
-    <h3>Add Course</h3>
-    <a class=" text-decoration-none" href="{% url 'school:courses_view' %}">Back to Course List</a>
+    <h3>Add Class to {{slug}}</h3>
+    <a class=" text-decoration-none" href="{% url 'school:course_detail' slug %}">Back to Course: {{slug}}</a>
 </div>
 <div class="add-form">
     <form action="" method="post">

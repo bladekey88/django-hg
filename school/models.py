@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.urls import reverse
+from django.core.validators import MinLengthValidator
 
 from users.models import Staff, Student
 
@@ -34,12 +35,16 @@ class BasicCourse(models.Model):
             "SPECIAL",
             "Specialised Subject",
         )
+        EXTERNAL = (
+            "EXTERNAL",
+            "External Course",
+        )
 
     course_type = models.CharField(
         "Course Type",
         choices=CourseType.choices,
         default=CourseType.OWL,
-        max_length=7,
+        max_length=8,
     )
 
     class Required(models.TextChoices):
@@ -69,7 +74,7 @@ class BasicCourse(models.Model):
         """The required field is only valid at OWL
         as any electives do not apply outside of that"""
         INVALID_CATEGORY_FOR_COURSE_TYPE_ERROR = (
-            """The course category cannot be set for non-OWL course types."""
+            """The course category must not be set for non-OWL course types."""
         )
         OWL_COURSE_REQUIRED_CATEGORY_ERROR = (
             """OWL courses must have a Course Category."""
@@ -82,6 +87,8 @@ class BasicCourse(models.Model):
 
     def clean(self, *args, **kwargs):
         self._validate_course_category()
+        if not self.slug:
+            self.slug = self.course_code
 
     def __str__(self):
         return f"{self.name} ({self.course_code})"
@@ -90,7 +97,7 @@ class BasicCourse(models.Model):
         return self.name
 
     def get_absolute_url(self):
-        return reverse("course_detail", kwargs={"slug": self.slug})
+        return reverse("school:course_detail", kwargs={"slug": self.slug})
 
 
 class SchoolYear(models.Model):
@@ -181,7 +188,14 @@ class BasicClass(models.Model):
             )
         ]
 
-    name = models.CharField("Class Name", max_length=100, unique=True)
+    name = models.CharField(
+        "Class Name",
+        max_length=100,
+        unique=True,
+        validators=[
+            MinLengthValidator(3),
+        ],
+    )
     course = models.ForeignKey(BasicCourse, on_delete=models.PROTECT)
     school_year = models.ForeignKey(
         SchoolYear,
@@ -205,21 +219,40 @@ class BasicClass(models.Model):
         "Class Code",
         max_length=20,
         editable=False,
-        default="0001",
         blank=True,
         null=True,
         unique=True,
     )
 
+    slug = models.SlugField(
+        null=False,
+        unique=True,
+    )
+
+    def clean(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self.class_code
+
     def save(self, *args, **kwargs):
         self.class_code = self.get_class_code()
+        if not self.slug:
+            self.slug = self.class_code
         super().save(*args, **kwargs)
 
     def get_class_code(self):
-        return f"{self.course.course_code}Y{self.school_year.get_two_year_format()}"
+        return f"{self.name[:3].upper()}-{self.course.course_code}Y{self.school_year.get_two_year_format()}"
 
     def __str__(self):
         return f"{self.course.name} ({self.get_class_code()})"
 
     def __repr__(self):
         return f"{self.name} - {self.get_class_code()}"
+
+    def get_absolute_url(self):
+        return reverse(
+            "school:class_detail",
+            kwargs={
+                "slug": self.course.slug,
+                "class_slug": self.slug,
+            },
+        )

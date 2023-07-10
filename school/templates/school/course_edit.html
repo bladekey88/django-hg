@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Edit Course {{object}}{% endblock title %}
+{% block pagestyle %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
+
+    * {
+
+        box-sizing: border-box;
+        font-family: Raleway;
+        padding: 0;
+        margin: 0;
+    }
+
+    .edit-form {
+        background-color: #fefefe;
+        min-width: 50%;
+    }
+
+    form>div {
+        margin: 0.75rem 0;
+    }
+
+    input,
+    select,
+    textarea {
+        font: 1.25rem / 1.5 sans-serif;
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+    }
+
+    input[type="submit"] {
+        background-color: rgb(52, 52, 146);
+        color: white;
+        border: 3px blue solid;
+        border-radius: 5px;
+        margin: 2rem 0;
+    }
+
+    input[type="submit"]:hover {
+        background-color: rgba(52, 52, 146, 0.75);
+
+    }
+
+
+    .errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .errorlist li::before {
+        content: "Error: ";
+    }
+
+    .errorlist li {
+        color: darkred;
+        font-weight: bolder;
+    }
+</style>
+{% endblock pagestyle %}
+
+{% block contentclass %}container px-3 my-5 {% endblock contentclass %}
+{% block content %}
+<div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center ">
+    <h3>
+        {{object.name}} ({{object.course_code}})
+    </h3>
+    <a class=" text-decoration-none" href="{% url 'school:course_detail' object.slug %}">Back to {{object}}</a>
+
+</div>
+<div class="card border-primary">
+    <div class="card-header bg-primary text-white text-center">
+        <h4 class="my-1">Edit Course</h4>
+    </div>
+    <div class="card-body">
+        <div class="edit-form">
+            <form action="" method="post">
+                {% csrf_token %}
+                {{form.as_div}}
+                <input class="btn border-dark shadow h6" type="submit" value="Submit">
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}
