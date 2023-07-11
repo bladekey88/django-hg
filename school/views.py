@@ -1,19 +1,25 @@
-from typing import Any, Optional
-from django.db import models
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import redirect, get_object_or_404, render
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import (
     PermissionRequiredMixin,
     LoginRequiredMixin,
     UserPassesTestMixin,
 )
-from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden
+from django.views import View
 from django.views.generic import ListView, DetailView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from users.models import Parent, CustomUser
-from school.models import BasicCourse, BasicClass
+from school.models import BasicCourse, BasicClass, SchoolYear
 from django.urls import reverse_lazy
-from school.forms import CourseUpdateForm, ClassAddForm
+from school.forms import (
+    CourseUpdateForm,
+    ClassAddForm,
+    ClassUpdateForm,
+    ClassEnrolForm,
+    ScheduleUpdateForm,
+    ScheduleAddForm,
+)
 
 
 # Create your views here.
@@ -25,19 +31,19 @@ def student_main(request):
         return HttpResponse(f"Welcome Student {request.user}")
 
 
-@login_required
-def staff(request):
-    if not request.user.is_school_staff() and not request.user.is_superuser:
-        return redirect("school:home")
-    else:
-        return HttpResponse(f"Welcome Staff {request.user}")
+class Staff(LoginRequiredMixin, View):
+    template_name = "users/staff_landing.html"
+
+    def get(self, request):
+        if not request.user.is_school_staff() and not request.user.is_superuser:
+            return redirect("school:home")
+        else:
+            return render(request, self.template_name)
 
 
 class ParentLandingView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Parent
-    permission_required = [
-        "users.view_parent",
-    ]
+    permission_required = ["users.view_parent"]
     template_name = "users/parents_landing.html"
 
     def handle_no_permission(self):
@@ -46,9 +52,7 @@ class ParentLandingView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
 class ParentChild(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Parent
-    permission_required = [
-        "users.view_parent",
-    ]
+    permission_required = ["users.view_parent"]
     template_name = "users/parent_list.html"
 
     def get_queryset(self):
@@ -190,10 +194,55 @@ class ClassAdd(PermissionRequiredMixin, CreateView):
         return super(ClassAdd, self).form_valid(form)
 
 
-class ClassDelete(PermissionRequiredMixin, DeleteView):
+class ClassEdit(PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
     permission_required = [
-        "school.delete_basicclass",
+        "school.change_basicclass",
     ]
+    model = BasicClass
+    template_name = "school/class_edit.html"
+    form_class = ClassUpdateForm
+    slug_url_kwarg = "class_slug"
+
+    def test_func(self):
+        school_class = self.get_object()
+        teacher_all = school_class.teacher.all()
+        output = [teacher.user.id for teacher in teacher_all]
+        if self.request.user == school_class.course.owner.user:
+            return True
+        elif (
+            self.request.user.is_superuser
+            or self.request.user.groups.filter(name="Head of House").exists()
+        ):
+            return True
+        elif self.request.user.id in output:
+            return True
+
+
+class ClassEnrol(PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
+    permission_required = [
+        "school.change_basicclass",
+        "users.view_student",
+    ]
+    model = BasicClass
+    template_name = "school/class_enrol.html"
+    slug_url_kwarg = "class_slug"
+    form_class = ClassEnrolForm
+
+    def test_func(self):
+        school_class = self.get_object()
+        teacher_all = school_class.teacher.all()
+        output = [teacher.user.id for teacher in teacher_all]
+        if self.request.user.id in output:
+            return True
+        elif (
+            self.request.user.is_superuser
+            or self.request.user.groups.filter(name="Head of House").exists()
+        ):
+            return True
+
+
+class ClassDelete(PermissionRequiredMixin, DeleteView):
+    permission_required = ["school.delete_basicclass"]
     permission_denied_message = "Access Forbidden"
     model = BasicClass
     template_name = "school/class_delete.html"
@@ -202,6 +251,46 @@ class ClassDelete(PermissionRequiredMixin, DeleteView):
     def get_success_url(self):
         course_id = self.kwargs["slug"]
         return reverse_lazy("school:course_detail", kwargs={"slug": course_id})
+
+
+# Schedule Section
+class SchedulesView(PermissionRequiredMixin, ListView):
+    permission_required = ["school.view_school_year"]
+    model = SchoolYear
+    template_name = "school/schedule_list.html"
+
+
+class ScheduleView(PermissionRequiredMixin, DetailView):
+    permission_required = ["school.view_school_year"]
+    model = SchoolYear
+    template_name = "school/schedule_detail.html"
+    slug_url_kwarg = "slug"
+
+
+class ScheduleAdd(PermissionRequiredMixin, CreateView):
+    permission_required = ["school.add_school_year"]
+    model = SchoolYear
+    template_name = "school/schedule_add.html"
+    slug_url_kwarg = "slug"
+    form_class = ScheduleAddForm
+
+
+class ScheduleEdit(PermissionRequiredMixin, UpdateView):
+    permission_required = ["school.change_school_year"]
+    model = SchoolYear
+    template_name = "school/schedule_edit.html"
+    slug_url_kwarg = "slug"
+    form_class = ScheduleUpdateForm
+
+
+class ScheduleDelete(PermissionRequiredMixin, DeleteView):
+    permission_required = ["school.delete_school_year"]
+    model = SchoolYear
+    template_name = "school/schedule_delete.html"
+    slug_url_kwarg = "slug"
+
+    def get_success_url(self):
+        return reverse_lazy("school:schedules_view")
 
 
 # Homepage

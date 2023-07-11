@@ -7,7 +7,7 @@ app_name = "school"
 urlpatterns = [
     path("", views.home, name="home"),
     path("student/", views.student_main, name="student_main"),
-    path("staff/", views.staff, name="staff_main"),
+    path("staff/", views.Staff.as_view(), name="staff_main"),
     # Course Section
     path(
         "staff/courses/",
@@ -54,9 +54,45 @@ urlpatterns = [
         name="class_add",
     ),
     path(
+        "staff/courses/<slug:slug>/classes/<slug:class_slug>/edit/",
+        views.ClassEdit.as_view(),
+        name="class_edit",
+    ),
+    path(
+        "staff/courses/<slug:slug>/classes/<slug:class_slug>/enrol/",
+        views.ClassEnrol.as_view(),
+        name="class_enrol",
+    ),
+    path(
         "staff/courses/<slug:slug>/classes/<slug:class_slug>/delete/",
         views.ClassDelete.as_view(),
         name="class_delete",
+    ),
+    # Schedule
+    path(
+        "staff/schedules/",
+        views.SchedulesView.as_view(),
+        name="schedules_view",
+    ),
+    path(
+        "staff/schedules/add-schedule/",
+        views.ScheduleAdd.as_view(),
+        name="schedule_add",
+    ),
+    path(
+        "staff/schedules/<slug:slug>/",
+        views.ScheduleView.as_view(),
+        name="schedule_detail",
+    ),
+    path(
+        "staff/schedules/<slug:slug>/edit/",
+        views.ScheduleEdit.as_view(),
+        name="schedule_edit",
+    ),
+    path(
+        "staff/schedules/<slug:slug>/delete/",
+        views.ScheduleDelete.as_view(),
+        name="schedule_delete",
     ),
     # Parent Section
     path(

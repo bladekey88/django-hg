@@ -88,7 +88,7 @@ class BasicCourse(models.Model):
     def clean(self, *args, **kwargs):
         self._validate_course_category()
         if not self.slug:
-            self.slug = self.course_code
+            self.slug = self.course_code.lower()
 
     def __str__(self):
         return f"{self.name} ({self.course_code})"
@@ -117,7 +117,6 @@ class SchoolYear(models.Model):
     name = models.CharField("Name", max_length=50)
     start_date = models.DateField()
     end_date = models.DateField()
-
     start_year = models.BigIntegerField(
         "Start Year",
         editable=False,
@@ -125,6 +124,10 @@ class SchoolYear(models.Model):
     end_year = models.BigIntegerField(
         "End Year",
         editable=False,
+    )
+    slug = models.SlugField(
+        null=False,
+        unique=True,
     )
 
     def _validate_school_period_unique(self):
@@ -165,10 +168,15 @@ class SchoolYear(models.Model):
         self.clean()
         self.start_year = self.start_date.year
         self.end_year = self.end_date.year
+        if not self.slug:
+            self.slug = f"{str(self.start_year)[2:]}{str(self.end_year)[2:]}"
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name}"
+
+    def get_absolute_url(self):
+        return reverse("school:schedule_detail", kwargs={"slug": self.slug})
 
 
 class BasicClass(models.Model):
@@ -236,7 +244,7 @@ class BasicClass(models.Model):
     def save(self, *args, **kwargs):
         self.class_code = self.get_class_code()
         if not self.slug:
-            self.slug = self.class_code
+            self.slug = self.class_code.lower()
         super().save(*args, **kwargs)
 
     def get_class_code(self):

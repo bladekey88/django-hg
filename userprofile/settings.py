@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "users.apps.UsersConfig",
     "ldap_sync",
+    "crispy_forms",
+    "crispy_bootstrap5",
     "debug_toolbar",
 ]
 
@@ -209,3 +211,5 @@ LDAP_SYNC_USER_ATTRIBUTES = {
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_AGE = 60 * 60
 SESSION_SAVE_EVERY_REQUEST = True
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"

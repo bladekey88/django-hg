@@ -1,6 +1,6 @@
 from django import forms
-from .models import BasicCourse, BasicClass
-from users.models import Staff
+from .models import BasicCourse, BasicClass, SchoolYear
+from users.models import Staff, Student
 from django.forms import widgets
 
 
@@ -24,7 +24,102 @@ class ClassAddForm(forms.ModelForm):
 
     teacher = forms.ModelMultipleChoiceField(
         queryset=Staff.objects.filter(staff_type="AC").all(),
-        widget=widgets.SelectMultiple,
+        widget=widgets.SelectMultiple(
+            attrs={
+                "size": "15",
+            }
+        ),
     )
 
-    widgets = {"teacher": widgets.CheckboxSelectMultiple}
+    # widgets = {"teacher": widgets.CheckboxSelectMultiple}
+
+
+class ClassUpdateForm(forms.ModelForm):
+    slug = forms.CharField(disabled=True)
+
+    class Meta:
+        model = BasicClass
+        fields = [
+            "name",
+            "course",
+            "school_year",
+            "teacher",
+            "slug",
+        ]
+
+    teacher = forms.ModelMultipleChoiceField(
+        queryset=Staff.objects.filter(staff_type="AC").all(),
+        widget=widgets.SelectMultiple(
+            attrs={
+                "size": "15",
+            }
+        ),
+    )
+
+
+class ClassEnrolForm(forms.ModelForm):
+    class Meta:
+        model = BasicClass
+        fields = ["student"]
+
+    student = forms.ModelMultipleChoiceField(
+        required=True,
+        label="Enroled Student(s)",
+        queryset=Student.objects.all(),
+        widget=widgets.CheckboxSelectMultiple(
+            attrs={
+                "size": "15",
+            }
+        ),
+    )
+
+
+class ScheduleAddForm(forms.ModelForm):
+    start_date = forms.DateField(
+        widget=widgets.DateInput(
+            format="%Y-%m-%d",
+            attrs={
+                "class": "form-control",
+                "type": "date",
+            },
+        )
+    )
+    end_date = forms.DateField(
+        widget=widgets.DateInput(
+            format="%Y-%m-%d",
+            attrs={
+                "class": "form-control",
+                "type": "date",
+            },
+        )
+    )
+
+    class Meta:
+        model = SchoolYear
+        fields = "__all__"
+
+
+class ScheduleUpdateForm(forms.ModelForm):
+    slug = forms.CharField(disabled=True)
+    start_date = forms.DateField(
+        widget=widgets.DateInput(
+            format="%Y-%m-%d",
+            attrs={
+                "class": "form-control",
+                "type": "date",
+            },
+        )
+    )
+    end_date = forms.DateField(
+        widget=widgets.DateInput(
+            format="%Y-%m-%d",
+            attrs={
+                "class": "form-control",
+                "type": "date",
+            },
+        )
+    )
+
+    class Meta:
+        model = SchoolYear
+        fields = "__all__"

@@ -59,9 +59,6 @@
         border-bottom: 2px solid #009879;
     }
 
-    h1 {
-        text-align: center;
-    }
 
     tbody>tr:hover {
         color: #009879;
@@ -129,7 +126,7 @@
             {% if object.student.values %}
             <thead>
                 <tr class="bg-dark">
-                    <th colspan="4">Associated Classes</th>
+                    <th colspan="4">Enroled Students</th>
                 </tr>
                 <tr>
                     <th>Student Name</th>
@@ -158,19 +155,18 @@
         <h5 class="mb-3">Class Management</h5>
         <div class="d-flex align-items-center gap-3">
             <a type="button" class="btn  btn-outline-primary text-decoration-none m-0 border-2 fw-bolder"
-                href="{% url 'school:course_edit' object.slug %}" role="button">
+                href="{% url 'school:class_edit' object.course.slug object.slug %}" role="button">
                 Edit Class
             </a>
             <a type="button" class="btn  btn-outline-primary text-decoration-none m-0 border-2 fw-bolder"
-                href="{% url 'school:course_edit' object.slug %}" role="button">
+                href="{% url 'school:class_enrol' object.course.slug object.slug %}" role="button">
                 Enrol/Unenrol Students
             </a>
             {% if perms.school.delete_basicclass %}
             <a class="btn btn-danger text-decoration-none m-0 border-secondary border-1 fw-bolder"
                 href="{% url 'school:class_delete' object.course.slug object.slug %}" role="button">
                 Delete Class
-
-            </a>{{object.course.slug}}
+            </a>
             {% endif %}
         </div>
     </div>

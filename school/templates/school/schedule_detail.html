@@ -34,7 +34,8 @@
         min-width: 100%;
     }
 
-    thead tr {
+    thead tr,
+    .list-heading {
         background-color: #009879;
         color: #ffffff;
         text-align: left;
@@ -71,7 +72,6 @@
 
     td {
         padding: 1rem 3rem 1rem;
-
     }
 
     td>a {
@@ -79,7 +79,7 @@
     }
 
     .extra-info,
-    .course-management {
+    .schedule-management {
         margin-top: 2rem;
     }
 
@@ -92,71 +92,54 @@
 {% block content %}
 <div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
     <h3 class="pt-1">
-        <span class="fw-bolder">Course</span> | {{object.name}}
+        <span class="fw-bolder">Schedule</span> | {{object.name}}
     </h3>
-    <a class=" text-decoration-none" href="{% url 'school:courses_view' %}">Back to Course List</a>
+    <a class=" text-decoration-none" href="{% url 'school:schedules_view' %}">Back to Schedule List</a>
 </div>
 <p>{{object.description}}</p>
 <div class="extra-info">
-    <h5>Additional Information</h5>
+    <h5>Information</h5>
     <table class="table table-responsive">
         <thead>
             <tr>
-                <th>Course Code</th>
-                <th>Course Type</th>
-                <th>Course Category</th>
-                <th>Owner</th>
+                <th>Start Year</th>
+                <th>End Year</th>
+                <th>Start Date</th>
+                <th>End Date</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td>{{object.course_code}}</td>
-                <td>{{object.get_course_type_display}}</td>
-                <td>
-                    {% if object.get_required_display %}
-                    {{object.get_required_display}}
-                    {%else%}
-                    N/A
-                </td>
-                {% endif %}
-
-                <td>
-                    {% if object.owner %}
-                    <a target="_blank" href="{% url 'account:profile_other_user' object.owner.user.uid %}">
-                        {{object.owner.user.full_name}}
-                    </a>
-                    {% endif %}
-                </td>
+                <td>{{object.start_year}}</td>
+                <td>{{object.end_year}}</td>
+                <td>{{ object.start_date|date:"Y-m-d"}}</td>
+                <td>{{object.end_date|date:"Y-m-d"}}</td>
             </tr>
             {% if object.basicclass_set.all %}
             <thead>
                 <tr class="bg-dark">
-                    <th colspan="4">Associated Classes</th>
+                    <th colspan="5">Associated Classes</th>
                 </tr>
                 <tr>
-                    <th>Class Name</th>
+                    <th colspan="2">Class Name</th>
                     <th>Class Code</th>
-                    <th>School Year</th>
                     <th>Teachers</th>
                 </tr>
             </thead>
             {% for classes in object.basicclass_set.all %}
             <tr>
-                <td>
-                    <a href="{% url 'school:class_detail' object.course_code classes.slug %}">
+                <td colspan="2">
+                    <a class="text-decoration-none"
+                        href="{% url 'school:class_detail' classes.course.slug classes.slug %}">
                         {{classes.name}}
                     </a>
                 </td>
                 <td>{{classes.class_code}}</td>
-                <td>{{classes.school_year}}</td>
                 <td>
                     <ul class="list-unstyled">
                         {% for teacher in classes.teacher.all %}
                         <li>
-                            <a class="text-decoration-none" target="_blank"
-                                href="{% url 'account:profile_other_user' teacher.user.uid %}">
-                                {{teacher.user.full_name}}
-                            </a>
+                            {{teacher.user.full_name}}
                         </li>
                         {% endfor %}
                     </ul>
@@ -167,27 +150,21 @@
         </tbody>
     </table>
 
-    <div class="course-management">
-        <h5 class="mb-3">Course Management</h5>
+    <div class="schedule-management">
+        <h5 class="mb-3">Schedule Management</h5>
         <div class="d-flex align-items-center gap-3">
             <a type="button" class="btn  btn-outline-primary text-decoration-none m-0 border-2 fw-bolder"
-                href="{% url 'school:class_add' object.slug %}" role="button">
-                Add Lesson
+                href="{% url 'school:schedule_edit' object.slug %}" role="button">
+                Edit Schedule
             </a>
-            <a type="button" class="btn  btn-outline-primary text-decoration-none m-0 border-2 fw-bolder"
-                href="{% url 'school:course_edit' object.slug %}" role="button">
-                Edit Course
-            </a>
-            {% if perms.school.delete_basiccourse %}
+            {% if perms.school.delete_school_year %}
             <a class="btn btn-danger text-decoration-none m-0 border-secondary border-1 fw-bolder"
-                href="{% url 'school:course_delete' object.slug %}" role="button">
-                Delete Course
+                href="{% url 'school:schedule_delete' object.slug %}" role="button">
+                Delete Schedule
             </a>
             {% endif %}
         </div>
     </div>
 </div>
-
-
 
 {% endblock content %}
