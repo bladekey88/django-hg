@@ -8,6 +8,8 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("student/", views.student_main, name="student_main"),
     path("staff/", views.Staff.as_view(), name="staff_main"),
+    path("staff/houses/", views.StaffHouses.as_view(), name="staff_houses"),
+    path("staff/houses/<house>/", views.StaffHouse.as_view(), name="staff_house"),
     # Course Section
     path(
         "staff/courses/",

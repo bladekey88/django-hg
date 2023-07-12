@@ -205,7 +205,6 @@ LDAP_SYNC_USER_ATTRIBUTES = {
     "displayName": "common_name",
     "sex": "sex",
     "title": "title",
-    "prefect": "prefect",
 }
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False

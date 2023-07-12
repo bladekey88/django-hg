@@ -7,9 +7,9 @@ from django.contrib.auth.mixins import (
 )
 from django.http import HttpResponse, HttpResponseForbidden
 from django.views import View
-from django.views.generic import ListView, DetailView
+from django.views.generic import ListView, DetailView, TemplateView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
-from users.models import Parent, CustomUser
+from users.models import Parent, CustomUser, Student
 from school.models import BasicCourse, BasicClass, SchoolYear
 from django.urls import reverse_lazy
 from school.forms import (
@@ -39,6 +39,42 @@ class Staff(LoginRequiredMixin, View):
             return redirect("school:home")
         else:
             return render(request, self.template_name)
+
+
+class StaffHouses(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ["users.view_student", "users.view_staff"]
+    template_name = "users/staff_houses.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["houses"] = Student.House
+        return context
+
+
+class StaffHouse(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ["users.view_student", "users.view_staff"]
+    template_name = "users/staff_house.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["houses"] = Student.House
+        return context
+
+    def get(self, request, house):
+        if house.lower() in [e.name.lower() for e in Student.House]:
+            output = [e.value for e in Student.House if house.lower() == e.name.lower()]
+            qs = (
+                Student.objects.filter(house=output[0])
+                .all()
+                .order_by(
+                    "year",
+                    "user__first_name",
+                )
+            )
+            context = {}
+            context["qs"] = qs
+            context["house"] = house
+            return render(request, self.template_name, context=context)
 
 
 class ParentLandingView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -136,7 +172,9 @@ class CourseEdit(PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def test_func(self):
         course = self.get_object()
-        if self.request.user == course.owner.user:
+        if course.owner is None:
+            return True
+        elif self.request.user == course.owner.user:
             return True
         elif (
             self.request.user.is_superuser

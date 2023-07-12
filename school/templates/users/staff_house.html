@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}{{house|capfirst}}{% endblock title %}
+{% block pagestyle %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
+
+
+    :root {
+        --house-gryffindor: #b02323;
+        --house-hufflepuff: #d4b33c;
+        --house-ravenclaw: #202092;
+        --house-slytherin: #009879;
+        --house-unsorted: #3a3939;
+    }
+
+    * {
+        box-sizing: border-box !important;
+        font-family: Raleway;
+        padding: 0;
+        margin: 0;
+    }
+
+    .custom-container {
+        border: 1px solid #eeeeee;
+        margin-left: 15em;
+        margin-top: 3rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0px;
+        align-items: center;
+        vertical-align: middle;
+        width: 75%;
+        box-shadow: 10px solid black;
+    }
+
+    table {
+        border-collapse: collapse;
+        margin: 25px 0;
+        font-size: 0.9em;
+        font-family: sans-serif;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+        min-width: 100%;
+    }
+
+    thead tr {
+        background-color: var(--house-{{house}});
+        color: #ffffff;
+        text-align: left;
+    }
+
+    td,
+    th,
+    thead {
+        padding: 12px 15px;
+        text-align: center;
+    }
+
+    tbody tr {
+        border-bottom: 1px solid #dddddd;
+    }
+
+    tbody tr:nth-of-type(even) {
+        background-color: #f3f3f3;
+    }
+
+    tbody tr:last-of-type {
+        border-bottom: 2px solid var(--house-{{house}});
+    }
+
+    tbody>tr:hover {
+        color: var(--house-{{house}});
+        font-weight: bolder;
+        background-color: rgb(250, 250, 78, 0.6);
+    }
+
+    td {
+        padding: 1rem 3rem 1rem;
+    }
+
+    td>a {
+        text-decoration: none;
+    }
+
+    .extra-info,
+    .class-management {
+        margin-top: 2rem;
+    }
+
+    .extra-info h5 {
+        border-bottom: 1px solid #ccc;
+    }
+
+    .text-bg-house {
+        background-color: var(--house-{{house}});
+    }
+</style>
+{% endblock pagestyle %}
+{% block contentclass %}container px-3 my-5 {% endblock contentclass %}
+{% block content %}
+<div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
+    <h3 class="pt-1">
+        <span class="fw-bold">House</span> | {{house|capfirst}}
+    </h3>
+    <a class=" text-decoration-none" href="{% url 'school:staff_houses'%}">
+        Back to Houses
+    </a>
+</div>
+<div class="extra-info">
+    <h5>Information</h5>
+    <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>ID Number</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>School Year</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in qs %}
+            <tr>
+                <td>{{student.user.title}} {{student.user.full_name}} ({{student.user.common_name}})</td>                                
+                <td>{{student.user.idnumber}}</td>
+                <td>{{student.user.uid}}</td>
+                <td>{{student.user.email}}</td>
+                <td>{{student.get_year_display}} Year
+                    {% if student.prefect %}
+                        <span class="badge rounded-pill text-bg-house">Prefect</span>
+                    {% endif %}                    
+                </td>
+            </tr>
+            {% endfor %}
+            {% if object.student.values %}
+            <thead>
+                <tr class="bg-dark">
+                    <th colspan="4">Enroled Students</th>
+                </tr>
+                <tr>
+                    <th>Student Name</th>
+                    <th>ID</th>
+                    <th>Student House</th>
+                    <th>Student Year</th>
+                </tr>
+            </thead>
+            {% for student in object.student.all %}
+            <tr>
+                <td>
+                    <a target="_blank" href="{% url 'account:profile_other_user' student.user.uid %}">
+                        {{student.user.full_name}} ({{student.user.uid}})
+                    </a>
+                </td>
+                <td>{{student.user.idnumber}}</td>
+                <td>{{student.get_house_display}}</td>
+                <td>{{student.get_year_display}}</td>
+            </tr>
+            {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+
+
+{% endblock content %}
