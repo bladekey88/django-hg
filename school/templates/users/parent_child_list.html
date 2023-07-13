@@ -97,7 +97,7 @@
                 {% for object in object_list %}
                 <tr>
                     <td>
-                        <a href="{% url 'school:children' object.user.id %}">{{object.user.full_name}}</a>
+                        <a href="{% url 'school:children' object.user.uid %}">{{object.user.full_name}}</a>
                     </td>
                     <td>{{object.get_house_display}}</td>
                     <td>{{object.get_year_display}}</td>

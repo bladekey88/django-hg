@@ -5,6 +5,7 @@ from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     UserPassesTestMixin,
 )
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseForbidden
 from django.views import View
 from django.views.generic import ListView, DetailView, TemplateView
@@ -23,12 +24,25 @@ from school.forms import (
 
 
 # Create your views here.
-@login_required
-def student_main(request):
-    if not request.user.is_student() and not request.user.is_superuser:
-        return redirect("school:home")
-    else:
-        return HttpResponse(f"Welcome Student {request.user}")
+class StudentLandingView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ["users.view_student"]
+    template_name = "users/staff_landing.html"
+
+    def get(self, request):
+        if not request.user.is_student() and not request.user.is_superuser:
+            return redirect("school:home")
+        else:
+            return render(request, self.template_name)
+
+
+class StudentHouses(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ["users.view_student"]
+    template_name = "users/houses.html"
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["houses"] = Student.House
+        return context
 
 
 class Staff(LoginRequiredMixin, View):
@@ -41,12 +55,13 @@ class Staff(LoginRequiredMixin, View):
             return render(request, self.template_name)
 
 
+# Inherit as it's the same page
 class StaffHouses(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["users.view_student", "users.view_staff"]
-    template_name = "users/staff_houses.html"
+    template_name = "users/houses.html"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+    def get_context_data(self):
+        context = super().get_context_data()
         context["houses"] = Student.House
         return context
 
@@ -54,11 +69,6 @@ class StaffHouses(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
 class StaffHouse(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["users.view_student", "users.view_staff"]
     template_name = "users/staff_house.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["houses"] = Student.House
-        return context
 
     def get(self, request, house):
         if house.lower() in [e.name.lower() for e in Student.House]:
@@ -89,7 +99,7 @@ class ParentLandingView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 class ParentChild(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Parent
     permission_required = ["users.view_parent"]
-    template_name = "users/parent_list.html"
+    template_name = "users/parent_child_list.html"
 
     def get_queryset(self):
         return (
@@ -97,28 +107,33 @@ class ParentChild(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         )
 
 
-class Child(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class Child(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     model = CustomUser
     permission_required = ["users.view_student", "users.view_parent"]
 
     slug_field = "uid"
     slug_url_kwarg = "uid"
-    template_name = "users/children.html"
+    template_name = "users/parent_child.html"
 
-    def get_object(self):
-        if self.request.user.is_superuser:
-            return CustomUser.objects.get(id=self.kwargs.get("pk"))
-        else:
-            user = CustomUser.objects.get(id=self.kwargs.get("pk"))
-            current_user = Parent.objects.get(user=self.request.user)
-            current_user_children = current_user.children.all()
-            if user.uid in current_user_children.values_list(
+    def get(self, request, child_user):
+        context = {}
+        try:
+            get_object_or_404(CustomUser, uid=child_user)
+            child = CustomUser.objects.get(uid=child_user)
+            context["object"] = child
+        except ObjectDoesNotExist:
+            return get_object_or_404(CustomUser, -1)
+
+        if not request.user.is_superuser:
+            parent = Parent.objects.get(user=request.user)
+            children_of_parent = parent.children.all()
+            if child.uid not in children_of_parent.values_list(
                 "user__uid",
                 flat=True,
             ):
-                return user
-            else:
-                return get_object_or_404(CustomUser, pk=-1)
+                return get_object_or_404(CustomUser, uid=None)
+
+        return render(request, template_name=self.template_name, context=context)
 
 
 class CoursesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -293,20 +308,20 @@ class ClassDelete(PermissionRequiredMixin, DeleteView):
 
 # Schedule Section
 class SchedulesView(PermissionRequiredMixin, ListView):
-    permission_required = ["school.view_school_year"]
+    permission_required = ["school.view_schoolyear"]
     model = SchoolYear
     template_name = "school/schedule_list.html"
 
 
 class ScheduleView(PermissionRequiredMixin, DetailView):
-    permission_required = ["school.view_school_year"]
+    permission_required = ["school.view_schoolyear"]
     model = SchoolYear
     template_name = "school/schedule_detail.html"
     slug_url_kwarg = "slug"
 
 
 class ScheduleAdd(PermissionRequiredMixin, CreateView):
-    permission_required = ["school.add_school_year"]
+    permission_required = ["school.add_schoolyear"]
     model = SchoolYear
     template_name = "school/schedule_add.html"
     slug_url_kwarg = "slug"
@@ -314,7 +329,7 @@ class ScheduleAdd(PermissionRequiredMixin, CreateView):
 
 
 class ScheduleEdit(PermissionRequiredMixin, UpdateView):
-    permission_required = ["school.change_school_year"]
+    permission_required = ["school.change_schoolyear"]
     model = SchoolYear
     template_name = "school/schedule_edit.html"
     slug_url_kwarg = "slug"
@@ -322,7 +337,7 @@ class ScheduleEdit(PermissionRequiredMixin, UpdateView):
 
 
 class ScheduleDelete(PermissionRequiredMixin, DeleteView):
-    permission_required = ["school.delete_school_year"]
+    permission_required = ["school.delete_schoolyear"]
     model = SchoolYear
     template_name = "school/schedule_delete.html"
     slug_url_kwarg = "slug"

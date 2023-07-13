@@ -95,18 +95,29 @@
     <h3 class="pt-1">
         <span class="fw-bold">School Houses</span>
     </h3>
-    <a class="text-decoration-none" href="{% url 'school:staff_main'%}">
-        Back to Staff Home Page
+    <a class="text-decoration-none" href="{% url 'school:home'%}">
+        Back to Home
     </a>
 </div>
 
 <div class="d-flex align-items-center gap-3 justify-content-evenly">
     {% for house in houses %}
     <div class="my-2 flex-shrink-0">
+        {% if house.name|lower == request.user.student.get_house_display|lower %}
+
+        <a class="fw-bolder btn btn-lg btn-{{house.name|lower}}" role="link"
+            href="{% url 'school:staff_house' house.name|lower %}">
+            {{house.name|lower|capfirst}}
+            <span class="badge rounded-pill"
+                style="border: solid 1px #b3b3b3; background-color: rgba(var(--house-{{request.user.student.get_house_display|lower}}));">Sorted</span>
+        </a>
+        {%else %}
         <a class="fw-bolder btn btn-lg btn-{{house.name|lower}}" role="link"
             href="{% url 'school:staff_house' house.name|lower %}">
             {{house.name|lower|capfirst}}
         </a>
+        {% endif %}
+
     </div>
     {% endfor house %}
 </div>

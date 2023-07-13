@@ -28,24 +28,28 @@
 {% endblock pagestyle %}
 {% block contentclass %}container px-3 my-5 {% endblock contentclass %}
 {% block content %}
+
 <div class="pb-1 mb-3 border-bottom border-1 border-dark text-center">
     <h3 class="pt-1">
         <span class="fw-bolder text-capitalize">Staff Members</span> | Home Page
     </h3>
+
 </div>
+
 <div class="card my-3">
     <div class="card-header">
         <h5 class="fw-bolder text-center pt-1">Academic</h5>
     </div>
     <div class="card-body">
         <div class="d-flex gap-3 align-items-center justify-content-evenly">
-            <div class="alert alert-success border-0 border-success border-5 border-start border-end">
-                <a class="h5 fw-bolder" href="{% url 'school:courses_view' %}">
+            <div>
+                <a class="h5 btn btn-outline-primary btn-lg fw-bolder border-2" href="{% url 'school:courses_view' %}">
                     Courses
                 </a>
             </div>
-            <div class="alert alert-success border-0 border-success border-5 border-start border-end">
-                <a class="h5 fw-bolder" href="{% url 'school:schedules_view' %}">
+            <div>
+                <a class="h5 btn btn-outline-primary btn-lg fw-bolder border-2"
+                    href="{% url 'school:schedules_view' %}">
                     Schedules
                 </a>
             </div>
@@ -59,13 +63,18 @@
     </div>
     <div class="card-body">
         <div class="d-flex gap-3 align-items-center justify-content-evenly">
-            <div class="alert alert-success border-0 border-success border-5 border-start border-end">
-                <a class="h5 fw-bolder" href="{% url 'school:staff_houses' %}">
+            <div>
+                <a class="h5 btn btn-outline-primary btn-lg fw-bolder border-2" href="{% url 'school:staff_houses' %}">
                     Students
                 </a>
             </div>
         </div>
     </div>
 </div>
-
+<h3 class="fw-bolder">DEBUG</h3>
+<pre>
+    {% for perm in request.user.get_group_permissions %}
+    {{perm}}
+    {% endfor %}
+</pre>
 {% endblock content %}

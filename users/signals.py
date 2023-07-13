@@ -23,11 +23,13 @@ def populate_user_profile(sender, user, ldap_user, **kwargs):
                 temp_profile = Student.objects.create(user=user)
             house_raw = ldap_user.attrs.get("schoolHouse")
             houses = Student.House.labels
-            if house_raw[0] in houses:
-                data["house"] = house_raw[0][0:2].upper()
+            if house_raw:
+                if house_raw[0] in houses:
+                    data["house"] = house_raw[0][0:2].upper()
             year_raw = ldap_user.attrs.get("schoolYear")
-            years = Student.Year
-            data["year"] = years.labels.index(year_raw[0].split(" ")[0])
+            if year_raw:
+                years = Student.Year
+                data["year"] = years.labels.index(year_raw[0].split(" ")[0])
             quidditch_raw = ldap_user.attrs.get("quidditchPlayer")
             prefect_raw = ldap_user.attrs.get("prefect")[0]
             if prefect_raw == "TRUE":

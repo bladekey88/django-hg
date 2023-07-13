@@ -6,9 +6,10 @@ app_name = "school"
 
 urlpatterns = [
     path("", views.home, name="home"),
-    path("student/", views.student_main, name="student_main"),
+    path("student/", views.StudentLandingView.as_view(), name="student_main"),
     path("staff/", views.Staff.as_view(), name="staff_main"),
     path("staff/houses/", views.StaffHouses.as_view(), name="staff_houses"),
+    path("student/houses/", views.StudentHouses.as_view(), name="student_houses"),
     path("staff/houses/<house>/", views.StaffHouse.as_view(), name="staff_house"),
     # Course Section
     path(
@@ -108,7 +109,7 @@ urlpatterns = [
         name="parent_childlist",
     ),
     path(
-        "parent/children/<int:pk>/",
+        "parent/children/<child_user>/",
         views.Child.as_view(),
         name="children",
     ),
