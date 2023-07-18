@@ -24,6 +24,10 @@
         width: 75%;
         box-shadow: 10px solid black;
     }
+
+    pre code {
+        color: #e83e8c;
+    }
 </style>
 {% endblock pagestyle %}
 {% block contentclass %}container px-3 my-5 {% endblock contentclass %}
@@ -71,10 +75,19 @@
         </div>
     </div>
 </div>
-<h3 class="fw-bolder">DEBUG</h3>
-<pre>
-    {% for perm in request.user.get_group_permissions %}
-    {{perm}}
-    {% endfor %}
-</pre>
+<h5 class="text-center fw-bolder border-2 border-bottom ">Accesses</h5>
+<div class="d-flex gap-3">
+    <div class="group-perms border-end pe-4">
+        <h4>Group</h4>
+        {% for perm in request.user.get_group_permissions %}
+        <code>{{perm}}</code><br />
+        {% endfor %}
+    </div>
+    <div class="user-perms">
+        <h4>User</h4>
+        {% for perm in request.user.get_user_permissions %}
+        <code>{{perm}}</code>
+        {% endfor %}
+    </div>
+</div>
 {% endblock content %}
