@@ -1,12 +1,11 @@
 from django.shortcuts import redirect, get_object_or_404, render
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import (
     PermissionRequiredMixin,
     LoginRequiredMixin,
     UserPassesTestMixin,
 )
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden, Http404
 from django.views import View
 from django.views.generic import ListView, DetailView, TemplateView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
@@ -43,6 +42,22 @@ class StudentHouses(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         context = super().get_context_data()
         context["houses"] = Student.House
         return context
+
+
+class StudentProfile(LoginRequiredMixin, View):
+    template_name = "account/profile.html"
+
+    def get(self, request, student):
+        try:
+            cu = CustomUser.objects.get(uid=student)
+            if cu.is_student():
+                context = {}
+                context["user"] = cu
+                return render(request, self.template_name, context=context)
+            else:
+                raise Http404("Student Not Found")
+        except Exception:
+            raise Http404("Student Not Found")
 
 
 class Staff(LoginRequiredMixin, View):
@@ -85,6 +100,8 @@ class StaffHouse(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
             context["qs"] = qs
             context["house"] = house
             return render(request, self.template_name, context=context)
+        else:
+            raise Http404("House does not exist or is not accessible.")
 
 
 class ParentLandingView(LoginRequiredMixin, PermissionRequiredMixin, ListView):

@@ -120,42 +120,21 @@
         <tbody>
             {% for student in qs %}
             <tr>
-                <td>{{student.user.title}} {{student.user.full_name}} ({{student.user.common_name}})</td>                                
+                <td>
+                    <a href="{% url 'school:student_profile' student.user.uid%}" target="_blank" rel="noopener noreferrer">
+                        {{student.user.title}} {{student.user.full_name}} ({{student.user.common_name}})
+                    </a>
+                </td>
                 <td>{{student.user.idnumber}}</td>
                 <td>{{student.user.uid}}</td>
                 <td>{{student.user.email}}</td>
                 <td>{{student.get_year_display}} Year
                     {% if student.prefect %}
-                        <span class="badge rounded-pill text-bg-house">Prefect</span>
-                    {% endif %}                    
+                    <span class="badge rounded-pill text-bg-house">Prefect</span>
+                    {% endif %}
                 </td>
             </tr>
-            {% endfor %}
-            {% if object.student.values %}
-            <thead>
-                <tr class="bg-dark">
-                    <th colspan="4">Enroled Students</th>
-                </tr>
-                <tr>
-                    <th>Student Name</th>
-                    <th>ID</th>
-                    <th>Student House</th>
-                    <th>Student Year</th>
-                </tr>
-            </thead>
-            {% for student in object.student.all %}
-            <tr>
-                <td>
-                    <a target="_blank" href="{% url 'account:profile_other_user' student.user.uid %}">
-                        {{student.user.full_name}} ({{student.user.uid}})
-                    </a>
-                </td>
-                <td>{{student.user.idnumber}}</td>
-                <td>{{student.get_house_display}}</td>
-                <td>{{student.get_year_display}}</td>
-            </tr>
-            {% endfor %}
-            {% endif %}
+            {% endfor %}                             
         </tbody>
     </table>
 </div>
