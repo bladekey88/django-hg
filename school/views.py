@@ -23,6 +23,38 @@ from school.forms import (
 
 
 # Create your views here.
+
+
+class StudentProfileView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    template_name = "users/profile_beta.html"
+    permission_required = ["users.view_student"]
+
+    def get_siblings(self, student):
+        current_student = Student.objects.get(user=student)
+        parents = current_student.children_of.all()
+        if len(parents) > 0:
+            sibling_list = []
+            for parent in parents:
+                for child in parent.children.all():
+                    if str(child.user.uid) != student.uid:
+                        sibling_list.append(child)
+            sibling = set(sibling_list)
+            return sibling
+
+    def get(self, request, student):
+        try:
+            cu = CustomUser.objects.get(uid=student)
+            if cu.is_student():
+                context = {}
+                context["user"] = cu
+                context["siblings"] = self.get_siblings(cu)
+                return render(request, self.template_name, context=context)
+            else:
+                raise Http404("Student Not Found")
+        except Exception as e:
+            raise Http404(f"Student Not Found: {e}")
+
+
 class StudentLandingView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["users.view_student"]
     template_name = "users/staff_landing.html"
@@ -44,20 +76,20 @@ class StudentHouses(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         return context
 
 
-class StudentProfile(LoginRequiredMixin, View):
-    template_name = "account/profile.html"
+# class StudentProfile(LoginRequiredMixin, View):
+#     template_name = "account/profile.html"
 
-    def get(self, request, student):
-        try:
-            cu = CustomUser.objects.get(uid=student)
-            if cu.is_student():
-                context = {}
-                context["user"] = cu
-                return render(request, self.template_name, context=context)
-            else:
-                raise Http404("Student Not Found")
-        except Exception:
-            raise Http404("Student Not Found")
+#     def get(self, request, student):
+#         try:
+#             cu = CustomUser.objects.get(uid=student)
+#             if cu.is_student():
+#                 context = {}
+#                 context["user"] = cu
+#                 return render(request, self.template_name, context=context)
+#             else:
+#                 raise Http404("Student Not Found")
+#         except Exception:
+#             raise Http404("Student Not Found")
 
 
 class Staff(LoginRequiredMixin, View):

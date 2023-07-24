@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load random_images %}
+{% block title %}Profile for {{user.full_name}}{% endblock title %}
+{% block pagestyle %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
+
+    * {
+
+        box-sizing: border-box !important;
+        font-family: Raleway;
+        padding: 0;
+        margin: 0;
+    }
+
+    .custom-container {
+        border: 1px solid #eeeeee;
+        margin-left: 15em;
+        margin-top: 3rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0px;
+        align-items: center;
+        vertical-align: middle;
+        width: 75%;
+        box-shadow: 10px solid black;
+    }
+
+    pre code {
+        color: #e83e8c;
+    }
+
+    .master-container {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .master-container>*,
+    .master-container .d-flex>* {
+        padding: 10px;
+        border: 2px solid rgb(95, 97, 110);
+        border-radius: .5em;
+        margin: 10px 10px;
+        flex: 1;
+    }
+</style>
+{% endblock pagestyle %}
+{% block contentclass %}container px-3 my-5 {% endblock contentclass %}
+{% block content %}
+
+<div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
+    <h3 class="pt-1">
+        <span class="fw-bold">Student</span> | {{user.full_name}}
+    </h3>
+    <a class=" text-decoration-none" href="#">
+        Back to Students
+    </a>
+</div>
+
+<div class="master-container 1">
+    <div>
+        <h3 class="h3">Details</h3>
+        <div class="border-1 border-bottom">
+            <label for="title">Title</label>
+            <h5 id="title">
+                {{user.title}}
+            </h5>
+            <label for="first_name">First Name</label>
+            <h5 id="first_name">
+                {{user.first_name}}
+            </h5>
+            <label for="common_name">Preferred to be known as</label>
+            <h5 id="common_name">
+                {{user.common_name}}
+            </h5>
+            <label for="middle_name">Middle Name</label>
+            <h5 id="middle_name">
+                {{user.middle_name}}
+            </h5>
+            <label for="last_name">Last Name</label>
+            <h5 id="last_name">
+                {{user.last_name}}
+            </h5>
+            <label for="sex">Sex</label>
+            <h5 id="sex">
+                {{user.get_sex_display}}
+            </h5>
+        </div>
+        <div class="py-2">
+            <label for="username">Username</label>
+            <h5 id="username">
+                {{user.uid}}
+            </h5>
+            <label for="email">Email</label>
+            <h5 id="email">
+                {{user.email}}
+            </h5>
+            <label for="idnum">ID Number</label>
+            <h5 id="idnum">
+                {{user.idnumber}}
+            </h5>
+        </div>
+    </div>
+    <div class="2">
+        <h3 class="h4">Student Information</h3>
+        <div class="border-1 border-bottom">
+            <label for="schoolHouse">House</label>
+            <h5 id="schoolHouse">
+                {{user.student.get_house_display}}
+            </h5>
+            <label for="schoolYear">Year</label>
+            <h5 id="schoolYear">
+                {{user.student.get_year_display}}
+            </h5>
+            <label for="isPrefect">Is Prefect</label>
+            <h5 id="isPrefect">
+                {{user.student.prefect}}
+            </h5>
+        </div>
+        {% if user.student.quidditchplayer %}
+        <div class="py-1">
+            <label for="quidditchPlayer">Quidditch Player</label>
+            <h5 id="quidditchPlayer">
+                {{user.student.quidditchplayer.get_team_member_type_display}}
+            </h5>
+            <label for="quidditchPosition">Quidditch Position</label>
+            <h5 id="quidditchPosition">
+                {{user.student.quidditchplayer.get_team_position_display}}
+            </h5>
+            <label for="quidditchCaptain">Is Quidditch Captain</label>
+            <h5 id="quidditchCaptain">
+                {{user.student.quidditchplayer.is_captain}}
+            </h5>
+            <label for="quidditchSuspended">Is Suspended</label>
+            <h5 id="quidditchSuspended">
+                {{user.student.quidditchplayer.is_suspended}}
+            </h5>
+        </div>
+        {% endif %}
+    </div>
+    {% if user.student.children_of.all or siblings %}
+    <div class="2">
+        <h3>Family Information</h3>
+        <div>
+            <h5 class="fw-bolder mt-4 border-1 border-bottom">Parent(s)</h5>
+            <div class="parent-info">
+                {% for parent in user.student.children_of.all %}
+                <label for="parentName">Name</label>
+                <h5 id="parentName">
+                    {{parent.user.title}} {{parent.user.full_name}}
+                </h5>
+                {% endfor %}
+            </div>
+
+            {% if siblings %}
+            <div class="siblings">
+                <h5 class="fw-bolder mt-4 border-1 border-bottom">Sibling(s)</h5>
+                {% for sibling in siblings %}
+                <div>
+                    <label for="siblingName">Name</label>
+                    <h5 id="siblingName">
+                        <a class="text-decoration-none" href="{% url 'school:student_profile' sibling.user.uid  %}">
+                            {{sibling.user.full_name}}
+                        </a>
+                    </h5>
+                    <label for="schoolInfo">School Information</label>
+                    <h5 id="schoolInfo">{{sibling.get_year_display}} {{sibling.get_house_display}}</h5>
+                    <label for="siblingID">ID Number</label>
+                    <h5 id="siblingID">{{sibling.user.idnumber}}</h5>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock content %}

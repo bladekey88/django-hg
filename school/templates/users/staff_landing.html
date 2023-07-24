@@ -86,7 +86,7 @@
     <div class="user-perms">
         <h4>User</h4>
         {% for perm in request.user.get_user_permissions %}
-        <code>{{perm}}</code>
+        <code>{{perm}}</code><br />
         {% endfor %}
     </div>
 </div>

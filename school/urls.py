@@ -7,11 +7,23 @@ app_name = "school"
 urlpatterns = [
     path("", views.home, name="home"),
     path("student/", views.StudentLandingView.as_view(), name="student_main"),
-    path("student/<student>", views.StudentProfile.as_view(), name="student_profile"),
+    path(
+        "student/<student>",
+        views.StudentProfileView.as_view(),
+        name="student_profile",
+    ),
     path("staff/", views.Staff.as_view(), name="staff_main"),
     path("staff/houses/", views.StaffHouses.as_view(), name="staff_houses"),
-    path("student/houses/", views.StudentHouses.as_view(), name="student_houses"),
-    path("staff/houses/<house>/", views.StaffHouse.as_view(), name="staff_house"),
+    path(
+        "student/houses/",
+        views.StudentHouses.as_view(),
+        name="student_houses",
+    ),
+    path(
+        "staff/houses/<house>/",
+        views.StaffHouse.as_view(),
+        name="staff_house",
+    ),
     # Course Section
     path(
         "staff/courses/",
