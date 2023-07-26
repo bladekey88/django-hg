@@ -4,8 +4,9 @@ from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     UserPassesTestMixin,
 )
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponse, HttpResponseForbidden, Http404
+from django.http import HttpResponse, Http404
 from django.views import View
 from django.views.generic import ListView, DetailView, TemplateView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
@@ -102,7 +103,6 @@ class Staff(LoginRequiredMixin, View):
             return render(request, self.template_name)
 
 
-# Inherit as it's the same page
 class StaffHouses(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["users.view_student", "users.view_staff"]
     template_name = "users/houses.html"
@@ -396,9 +396,8 @@ class ScheduleDelete(PermissionRequiredMixin, DeleteView):
 
 
 # Homepage
+@login_required
 def home(request):
-    if request.user.is_anonymous:
-        return HttpResponseForbidden("Access Denied")
     if request.user.is_student():
         return redirect("school:student_main")
     elif request.user.is_school_staff():

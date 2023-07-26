@@ -4,12 +4,12 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.urls import reverse
 
 from users.managers import CustomUserManager
 
+
 # Create your models here.
-
-
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_("Email Address"), unique=True)
     uid = models.CharField("User ID", max_length=20, unique=True)
@@ -113,6 +113,97 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
             return False
 
 
+class Staff(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = "Staff Member"
+        verbose_name_plural = "Staff Members"
+        ordering = ("user__last_name",)
+
+    class StaffType(models.TextChoices):
+        ACADEMIC = "AC", "Academic"
+        PASTORAL = "PA", "Pastoral"
+        CLERICAL = "CL", "Clerical"
+        OTHER = "OT", "Other"
+
+    staff_type = models.TextField(
+        max_length=2,
+        choices=StaffType.choices,
+    )
+
+    is_head_of_house = models.BooleanField("Is Head of House", default=False)
+
+    def clean(self, *args, **kwargs):
+        USER_IS_STUDENT_ERROR = f"""
+        {self.user.full_common_name()} cannot be a Staff Member because they
+        already exist as a Student. If you wish to proceed you must remove
+        the Student object."""
+
+        student_exists = self.user.is_student()
+        if student_exists:
+            raise ValidationError(USER_IS_STUDENT_ERROR)
+        else:
+            print("Good to proceed")
+
+    def __str__(self) -> str:
+        return f"{self.user.full_name(True,True)} ({self.user.idnumber}-{self.get_staff_type_display()})"
+
+    def __repr__(self) -> str:
+        return f"{self.user.full_common_name()} ({self.user.idnumber})"
+
+
+class SchoolHouse(models.Model):
+    class Meta:
+        verbose_name = "School House"
+        verbose_name_plural = "School Houses"
+        ordering = ["name"]
+
+    name = models.CharField(
+        "House Name",
+        max_length=50,
+        unique=True,
+    )
+    mascot = models.CharField(
+        "House Mascot",
+        max_length=50,
+        unique=True,
+    )
+    ghost = models.CharField(
+        "House Ghost",
+        max_length=100,
+        unique=True,
+        null=True,
+        blank=True,
+    )
+    crest = models.ImageField(
+        "House Crest",
+        null=True,
+        blank=True,
+    )
+    # sorted_students = models.ForeignKey(
+    #     Student,
+    #     on_delete=models.PROTECT,
+    #     null=True,
+    #     blank=True,
+    #     related_name="sorted_students",
+    # )
+    head_of_house = models.ForeignKey(
+        Staff,
+        on_delete=models.PROTECT,
+        limit_choices_to={
+            "staff_type": Staff.StaffType.ACADEMIC,
+        },
+        verbose_name="Professor",
+    )
+
+    def __str__(self):
+        return f"{self.name}"
+
+    def __repr__(self):
+        return f"{self.name}"
+
+
 class Student(models.Model):
     class Meta:
         verbose_name = "Student"
@@ -154,6 +245,12 @@ class Student(models.Model):
     )
 
     prefect = models.BooleanField("Is Prefect", default=False)
+    test_house = models.ForeignKey(
+        SchoolHouse,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
 
     def is_sorted(self):
         return self.house in {
@@ -204,6 +301,14 @@ class Student(models.Model):
 
     def __repr__(self):
         return self.user.email
+
+    def get_absolute_url(self):
+        return reverse(
+            "school:student_profile",
+            kwargs={
+                "student": self.user.uid,
+            },
+        )
 
 
 class QuidditchPlayer(models.Model):
@@ -279,46 +384,6 @@ class QuidditchPlayer(models.Model):
 
     def __repr__(self):
         return f"{self.student}: {self.team_member_type} {self.team_position}"
-
-
-class Staff(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = "Staff Member"
-        verbose_name_plural = "Staff Members"
-        ordering = ("user__last_name",)
-
-    class StaffType(models.TextChoices):
-        ACADEMIC = "AC", "Academic"
-        PASTORAL = "PA", "Pastoral"
-        CLERICAL = "CL", "Clerical"
-        OTHER = "OT", "Other"
-
-    staff_type = models.TextField(
-        max_length=2,
-        choices=StaffType.choices,
-    )
-
-    is_head_of_house = models.BooleanField("Is Head of House", default=False)
-
-    def clean(self, *args, **kwargs):
-        USER_IS_STUDENT_ERROR = f"""
-        {self.user.full_common_name()} cannot be a Staff Member because they
-        already exist as a Student. If you wish to proceed you must remove
-        the Student object."""
-
-        student_exists = self.user.is_student()
-        if student_exists:
-            raise ValidationError(USER_IS_STUDENT_ERROR)
-        else:
-            print("Good to proceed")
-
-    def __str__(self) -> str:
-        return f"{self.user.full_name(True,True)} ({self.user.idnumber}-{self.get_staff_type_display()})"
-
-    def __repr__(self) -> str:
-        return f"{self.user.full_common_name()} ({self.user.idnumber})"
 
 
 class Parent(models.Model):

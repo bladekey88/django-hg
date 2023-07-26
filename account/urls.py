@@ -23,4 +23,9 @@ urlpatterns = [
         views.profile_other_user,
         name="profile_other_user",
     ),
+    path(
+        "create-user/",
+        views.UserCreateView.as_view(),
+        name="create-user",
+    ),
 ]

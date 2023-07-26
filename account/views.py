@@ -3,6 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from users.models import CustomUser
 from django_auth_ldap.backend import LDAPBackend
+from django.views.generic.edit import CreateView
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from users.forms import CustomUserCreationForm
 
 # Create your views here.
 
@@ -71,3 +74,12 @@ def profile_other_user(request, uid):
             "manager": manager_details,
         },
     )
+
+
+class UserCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    permission_required = ["users.add_customuser"]
+    template_name = "account/create-user.html"
+    model = CustomUser
+    raise_exception = True
+    # fields = "__all__"
+    form_class = CustomUserCreationForm

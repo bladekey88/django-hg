@@ -41,11 +41,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "formtools",
     "users.apps.UsersConfig",
     "ldap_sync",
     "crispy_forms",
     "crispy_bootstrap5",
     "debug_toolbar",
+    "form_test",
 ]
 
 MIDDLEWARE = [

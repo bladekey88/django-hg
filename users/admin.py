@@ -1,14 +1,25 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, Student, QuidditchPlayer, Staff, Parent
+from .models import CustomUser, Student, QuidditchPlayer, Staff, Parent, SchoolHouse
 from .forms import CustomUserChangeForm, CustomUserCreationForm
 from school.models import BasicCourse, BasicClass
 
 
 # Register your models here.
+
+
 class StudentInline(admin.TabularInline):
     model = Student
     verbose_name_plural = "Student"
+
+
+class StudentInlineReadOnly(admin.TabularInline):
+    extra = 0
+    model = Student
+    verbose_name_plural = "Student"
+    readonly_fields = ["user", "house", "year", "prefect"]
+    can_delete = True
+    max_num = 0
 
 
 class BasicClassInline(admin.TabularInline):
@@ -478,6 +489,17 @@ class StaffAdmin(admin.ModelAdmin):
     ]
 
 
+class SchoolHouseAdmin(admin.ModelAdmin):
+    inlines = [StudentInlineReadOnly]
+    list_display = [
+        "name",
+        "head_of_house",
+        "mascot",
+        "crest",
+    ]
+
+
+admin.site.register(SchoolHouse, SchoolHouseAdmin)
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(QuidditchPlayer, QuidditchPlayerAdmin)
 admin.site.register(Student, StudentAdmin)
