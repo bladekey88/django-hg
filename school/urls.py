@@ -12,17 +12,35 @@ urlpatterns = [
         views.StudentProfileView.as_view(),
         name="student_profile",
     ),
-    path("staff/", views.Staff.as_view(), name="staff_main"),
-    path("staff/houses/", views.StaffHouses.as_view(), name="staff_houses"),
+    path(
+        "staff/",
+        views.Staff.as_view(),
+        name="staff_main",
+    ),
+    path(
+        "staff/view-students/",
+        views.StaffViewStudent.as_view(),
+        name="staff_view_students",
+    ),
     path(
         "student/houses/",
         views.StudentHouses.as_view(),
         name="student_houses",
     ),
     path(
-        "staff/houses/<house>/",
-        views.StaffHouse.as_view(),
+        "staff/view-students/house/<house>/",
+        views.StaffViewStudentHouse.as_view(),
         name="staff_house",
+    ),
+    path(
+        "staff/view-students/a-z/<letter>/",
+        views.StaffViewStudentAlpha.as_view(),
+        name="staff_a_z",
+    ),
+    path(
+        "staff/view-students/year/<year>/",
+        views.StaffViewStudentYear.as_view(),
+        name="staff_year",
     ),
     # Course Section
     path(

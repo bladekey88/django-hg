@@ -1,17 +1,8 @@
 {% extends "base.html" %}
-{% block title %}{{house|capfirst}} Students{% endblock title %}
+{% block title %}{{letter|capfirst}} Students{% endblock title %}
 {% block pagestyle %}
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
-
-
-    :root {
-        --house-gryffindor: #b02323;
-        --house-hufflepuff: #d4b33c;
-        --house-ravenclaw: #202092;
-        --house-slytherin: #009879;
-        --house-unsorted: #3a3939;
-    }
 
     * {
         box-sizing: border-box !important;
@@ -43,7 +34,7 @@
     }
 
     thead tr {
-        background-color: var(--house-{{house}});
+        background-color: #009879;
         color: #ffffff;
         text-align: left;
     }
@@ -64,11 +55,11 @@
     }
 
     tbody tr:last-of-type {
-        border-bottom: 2px solid var(--house-{{house}});
+        border-bottom: 2px solid #009879;
     }
 
     tbody>tr:hover {
-        color: var(--house-{{house}});
+        color: #009879;
         font-weight: bolder;
         background-color: rgb(250, 250, 78, 0.6);
     }
@@ -91,7 +82,7 @@
     }
 
     .text-bg-house {
-        background-color: var(--house-{{house}});
+        background-color: #009879;
     }
 </style>
 {% endblock pagestyle %}
@@ -99,14 +90,14 @@
 {% block content %}
 <div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
     <h3 class="pt-1">
-        <span class="fw-bold">House</span> | {{house|capfirst}}
+        <span class="fw-bold">Surname</span> | {{letter|capfirst}}
     </h3>
     <a class=" text-decoration-none" href="{% url 'school:staff_view_students'%}">
         Back to View Students
     </a>
 </div>
 <div class="extra-info">
-    <h5>Information ({{qs.count}} Students)</h5>   
+    <h5>Information ({{qs.count}} Student{% if qs.count > 1 %}s{% endif %})</h5>
     <table class="table table-responsive">
         <thead>
             <tr>
@@ -115,13 +106,15 @@
                 <th>Username</th>
                 <th>Email</th>
                 <th>School Year</th>
+                <th>School House</th>
             </tr>
         </thead>
         <tbody>
             {% for student in qs %}
             <tr>
                 <td>
-                    <a href="{% url 'school:student_profile' student.user.uid%}" target="_blank" rel="noopener noreferrer">
+                    <a href="{% url 'school:student_profile' student.user.uid%}" target="_blank"
+                        rel="noopener noreferrer">
                         {{student.user.title}} {{student.user.full_name}} ({{student.user.common_name}})
                     </a>
                 </td>
@@ -133,8 +126,9 @@
                     <span class="badge rounded-pill text-bg-house">Prefect</span>
                     {% endif %}
                 </td>
+                <td>{{student.get_house_display}}</td>
             </tr>
-            {% endfor %}                             
+            {% endfor %}
         </tbody>
     </table>
 </div>

@@ -103,17 +103,50 @@ class Staff(LoginRequiredMixin, View):
             return render(request, self.template_name)
 
 
-class StaffHouses(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+class StaffViewStudent(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["users.view_student", "users.view_staff"]
-    template_name = "users/houses.html"
+    template_name = "users/view_students.html"
+
+    def generate_alphabet_index(self):
+        import string
+
+        letters = {letter: 0 for letter in string.ascii_lowercase}
+        qs = Student.objects.all()
+        for student in qs:
+            letters[student.user.full_name(False, True)[0].lower()] += 1
+        return letters
 
     def get_context_data(self):
         context = super().get_context_data()
         context["houses"] = Student.House
+        context["years"] = Student.Year
+        context["alpha"] = self.generate_alphabet_index()
         return context
 
 
-class StaffHouse(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+class StaffViewStudentAlpha(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ["users.view_student", "users.view_staff"]
+    template_name = "users/staff_a_z.html"
+
+    def get(self, request, letter):
+        letter = letter.upper()
+        qs = (
+            Student.objects.filter(user__last_name__startswith=letter)
+            .all()
+            .order_by(
+                "year",
+                "user__first_name",
+            )
+        )
+        if not qs:
+            raise Http404(f"No students with surnames that begin with {letter}")
+        context = dict()
+        context["qs"] = qs
+        context["letter"] = letter
+        return render(request, self.template_name, context=context)
+
+
+class StaffViewStudentHouse(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["users.view_student", "users.view_staff"]
     template_name = "users/staff_house.html"
 
@@ -134,6 +167,29 @@ class StaffHouse(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
             return render(request, self.template_name, context=context)
         else:
             raise Http404("House does not exist or is not accessible.")
+
+
+class StaffViewStudentYear(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ["users.view_student", "users.view_staff"]
+    template_name = "users/staff_year.html"
+
+    def get(self, request, year):
+        if year.lower() in [e.name.lower() for e in Student.Year]:
+            output = [e.value for e in Student.Year if year.lower() == e.name.lower()]
+            qs = (
+                Student.objects.filter(year=output[0])
+                .all()
+                .order_by(
+                    "house",
+                    "user__first_name",
+                )
+            )
+            context = {}
+            context["qs"] = qs
+            context["year"] = year
+            return render(request, self.template_name, context=context)
+        else:
+            raise Http404("Year does not exist or is not accessible.")
 
 
 class ParentLandingView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
