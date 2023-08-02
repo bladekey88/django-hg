@@ -6,12 +6,19 @@ app_name = "school"
 
 urlpatterns = [
     path("", views.home, name="home"),
+    # Student Section
     path("student/", views.StudentLandingView.as_view(), name="student_main"),
     path(
-        "student/<student>",
+        "student/student/<student>/",
         views.StudentProfileView.as_view(),
         name="student_profile",
     ),
+    path(
+        "student/houses/",
+        views.StudentHouses.as_view(),
+        name="student_houses",
+    ),
+    # Staff Section
     path(
         "staff/",
         views.Staff.as_view(),
@@ -21,11 +28,6 @@ urlpatterns = [
         "staff/view-students/",
         views.StaffViewStudent.as_view(),
         name="staff_view_students",
-    ),
-    path(
-        "student/houses/",
-        views.StudentHouses.as_view(),
-        name="student_houses",
     ),
     path(
         "staff/view-students/house/<house>/",
@@ -78,14 +80,14 @@ urlpatterns = [
     ),
     # Classes Section (as a subset of courses)
     path(
-        "staff/courses/<slug:slug>/classes/<slug:class_slug>",
-        views.ClassView.as_view(),
-        name="class_detail",
-    ),
-    path(
         "staff/courses/<slug:slug>/classes/add-class/",
         views.ClassAdd.as_view(),
         name="class_add",
+    ),
+    path(
+        "staff/courses/<slug:slug>/classes/<slug:class_slug>/",
+        views.ClassView.as_view(),
+        name="class_detail",
     ),
     path(
         "staff/courses/<slug:slug>/classes/<slug:class_slug>/edit/",

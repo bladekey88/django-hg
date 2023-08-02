@@ -2,7 +2,6 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.core.validators import MinLengthValidator
-
 from users.models import Staff, Student
 
 # Create your models here.
@@ -219,9 +218,7 @@ class BasicClass(models.Model):
         verbose_name="Professor",
     )
     student = models.ManyToManyField(
-        Student,
-        verbose_name="student",
-        blank=True,
+        Student, verbose_name="student", blank=True, through="Enrolment"
     )
     class_code = models.CharField(
         "Class Code",
@@ -264,3 +261,44 @@ class BasicClass(models.Model):
                 "class_slug": self.slug,
             },
         )
+
+    def get_enrolable_subjects(self):
+        year_ordinal = self.student.get_year_display()
+        return BasicClass.objects.filter(name__icontains=year_ordinal)
+
+
+class Enrolment(models.Model):
+    class Meta:
+        verbose_name = "Enrolment"
+        verbose_name_plural = "Enrolments"
+        constraints = [
+            models.UniqueConstraint(
+                name="unique_student_class",
+                fields=[
+                    "student",
+                    "basic_class",
+                ],
+            )
+        ]
+
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    basic_class = models.ForeignKey(BasicClass, on_delete=models.CASCADE)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
+
+    class ClassStatus(models.TextChoices):
+        ACTIVE = "A", "Active"
+        EXPIRED = "E", "Expired"
+        NOT_ELIGIBLE = "N", "Not Eligible"
+        PENDING = "P", "Pending"
+        SUSPENDED = "S", "Suspended"
+
+    student_class_status = models.CharField(
+        "Status",
+        max_length=1,
+        blank=False,
+        choices=ClassStatus.choices,
+    )
+
+    def __str__(self):
+        return f"{self.student.user.uid} - {self.basic_class.name}"

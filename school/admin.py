@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import BasicCourse, BasicClass, SchoolYear
-
+from .models import BasicCourse, BasicClass, SchoolYear, Enrolment
 
 # Register your models here.
 
@@ -53,7 +52,34 @@ class BasicCourseAdmin(admin.ModelAdmin):
                     return True
 
 
+class EnrolmentInline(admin.TabularInline):
+    model = Enrolment
+    verbose_name_plural = "Enrolments"
+
+
+class EnrolmentAdmin(admin.ModelAdmin):
+    list_display = [
+        "student",
+        "basic_class",
+        "created_date",
+        "modified_date",
+        "student_class_status",
+    ]
+
+    list_filter = [
+        "created_date",
+        "modified_date",
+        "student_class_status",
+    ]
+
+    readonly_fields = [
+        "created_date",
+        "modified_date",
+    ]
+
+
 class BasicClassAdmin(admin.ModelAdmin):
+    inlines = [EnrolmentInline]
     filter_horizontal = (
         "teacher",
         "student",
@@ -112,3 +138,4 @@ class SchoolYearAdmin(admin.ModelAdmin):
 admin.site.register(BasicCourse, BasicCourseAdmin)
 admin.site.register(BasicClass, BasicClassAdmin)
 admin.site.register(SchoolYear, SchoolYearAdmin)
+admin.site.register(Enrolment, EnrolmentAdmin)

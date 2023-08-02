@@ -209,6 +209,9 @@ class Student(models.Model):
         verbose_name = "Student"
         verbose_name_plural = "Students"
         ordering = ("user__last_name",)
+        permissions = [
+            ("enrol_student", "Can sign up student to a course"),
+        ]
 
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
 

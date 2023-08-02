@@ -23,9 +23,7 @@ from school.forms import (
 )
 
 
-# Create your views here.
-
-
+# Student Section
 class StudentProfileView(LoginRequiredMixin, PermissionRequiredMixin, View):
     template_name = "users/profile_beta.html"
     permission_required = ["users.view_student"]
@@ -77,22 +75,7 @@ class StudentHouses(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         return context
 
 
-# class StudentProfile(LoginRequiredMixin, View):
-#     template_name = "account/profile.html"
-
-#     def get(self, request, student):
-#         try:
-#             cu = CustomUser.objects.get(uid=student)
-#             if cu.is_student():
-#                 context = {}
-#                 context["user"] = cu
-#                 return render(request, self.template_name, context=context)
-#             else:
-#                 raise Http404("Student Not Found")
-#         except Exception:
-#             raise Http404("Student Not Found")
-
-
+# Staff Section
 class Staff(LoginRequiredMixin, View):
     template_name = "users/staff_landing.html"
 
@@ -131,7 +114,7 @@ class StaffViewStudentAlpha(LoginRequiredMixin, PermissionRequiredMixin, Templat
     def get(self, request, letter):
         letter = letter.upper()
         qs = (
-            Student.objects.filter(user__last_name__startswith=letter)
+            Student.objects.filter(user__last_name__istartswith=letter)
             .all()
             .order_by(
                 "year",
