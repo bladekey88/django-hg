@@ -102,7 +102,7 @@
                 <th>Class Code</th>
                 <th>School Year</th>
                 <th>Course</th>
-                <th>Professor(s)</th>
+                <th colspan="2">Professor(s)</th>
             </tr>
         </thead>
         <tbody>
@@ -110,7 +110,7 @@
                 <td>{{object.class_code}}</td>
                 <td>{{object.school_year}}</td>
                 <td>{{object.course.name}}</td>
-                <td>
+                <td colspan="2">
                     <ul class="list-unstyled">
                         {% for teachers in object.teacher.all %}
                         <li>
@@ -126,31 +126,33 @@
             {% if object.student.values %}
             <thead>
                 <tr class="bg-dark">
-                    <th colspan="4">Enroled Students</th>
+                    <th colspan="5">Enroled Students</th>
                 </tr>
                 <tr>
                     <th>Student Name</th>
                     <th>ID</th>
                     <th>Student House</th>
                     <th>Student Year</th>
+                    <th>Enrolment Status</th>
                 </tr>
             </thead>
-            {% for student in object.student.all %}
+            {% for enrolment in object.enrolment_set.all %}
             <tr>
                 <td>
-                    <a target="_blank" href="{% url 'account:profile_other_user' student.user.uid %}">
-                        {{student.user.full_name}} ({{student.user.uid}})
+                    <a target="_blank" href="{% url 'account:profile_other_user' enrolment.student.user.uid %}">
+                        {{enrolment.student.user.full_name}} ({{enrolment.student.user.uid}})
                     </a>
                 </td>
-                <td>{{student.user.idnumber}}</td>
-                <td>{{student.get_house_display}}</td>
-                <td>{{student.get_year_display}}</td>
+                <td>{{enrolment.student.user.idnumber}}</td>
+                <td>{{enrolment.student.get_house_display}}</td>
+                <td>{{enrolment.student.get_year_display}}</td>
+                <td>{{enrolment.get_student_class_status_display}}</td>
             </tr>
+
             {% endfor %}
             {% endif %}
         </tbody>
     </table>
-
     <div class="course-management">
         <h5 class="mb-3">Class Management</h5>
         <div class="d-flex align-items-center gap-3">

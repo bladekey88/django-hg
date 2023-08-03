@@ -54,7 +54,7 @@
         color: white;
         border: 3px blue solid;
         border-radius: 5px;
-        margin: 2rem 0;
+        margin: 1rem 0;
     }
 
     input[type="submit"]:hover {
@@ -76,6 +76,12 @@
         color: darkred;
         font-weight: bolder;
     }
+
+    #div_id_student {
+        column-count: 2;
+        column-gap: 1.5rem;
+        list-style: none;
+    }
 </style>
 {% endblock pagestyle %}
 
@@ -94,7 +100,7 @@
     </div>
     <div class="card-body">
         <div class="enrol-form">
-            <form action="" method="post">
+            <form id="enrol-student-form" action="" method="post">
                 {% csrf_token %}
                 {{form|crispy }}
                 <input class="btn border-dark shadow h6" type="submit" value="Submit">
@@ -103,3 +109,84 @@
     </div>
 </div>
 {% endblock content %}
+
+{% block footer %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+
+<script>
+
+
+    // $(document).ready(function () {
+    //     const re = /[^(]+\(\d+-([^)]+)\)/i;
+    //     $("#enrol-student-form label").each(function (i) {
+    //         if ($(this).index() == 1) {
+    //             let $current_value = ($(this).text().match(re));
+    //             let $next_value = ($(this).parent().next().text().match(re));
+    //             let $prev_value = ($(this).parent().prev().text().match(re));
+
+    //             if ($prev_value == null) {
+    //                 $(this).parent().prepend("<div class='h6 m-0 mt-3 fw-bolder' id='grouping-header'>" + $current_value[1] + "</div>");
+    //             }
+
+    //             if ($next_value != null) {
+    //                 if ($current_value[1] != $next_value[1]) {
+    //                     $(this).parent().append("<div class='h6 m-0 mt-3 fw-bolder' id='grouping-header'>" + $next_value[1] + "</div>");
+    //                 }
+    //             }
+    //         }
+    //     })
+    // });
+
+    $(document).ready(function () {
+        const regex = /[^(]+\(\d+-(.+)\)/i;
+        $("#enrol-student-form label").each(function (i) {
+            if (i >= 1) {
+                const currentValue = regex.exec($(this).text());
+                const nextValue = regex.exec($(this).parent().next().text());
+                const prevValue = regex.exec($(this).parent().prev().text());
+                if (prevValue === null) {
+                    $(this).parent().prepend(
+                        `<div class=" h6 m-0 mt-3 fw-bolder grouping-header">
+                            <a class="grouping-link text-decoration-none" href="#${currentValue[1]}">
+                                ${currentValue[1]}
+                                </a>
+                            </div>`
+                    );
+                }
+                if (nextValue !== null) {
+                    if (currentValue[1] !== nextValue[1]) {
+                        $(this).parent().append(
+                            `<div class="h6 m-0 mt-3 fw-bolder grouping-header">
+                                <a class="grouping-link text-decoration-none" href="#${nextValue[1]}">
+                                    ${nextValue[1]}
+                                    </a>
+                                    </div>`
+                        );
+                    }
+                }
+            }
+        });
+
+        $(".grouping-link").click(function (e) {
+            $current_header = $(this).text().trim();
+            $inputs = ($("label:contains('" + $current_header + "')").siblings("input"))
+            $all_checked = $inputs.not(":checked").length == 0;
+            // $all_checked = $('.abc:checked').length == $('.abc').length
+
+            if ($(this).hasClass("checked-all") || $all_checked == true) {
+                $inputs.prop("checked", false)
+                $(this).removeClass("checked-all");
+            }
+            else {
+                $inputs.prop("checked", true);
+                $(this).addClass("checked-all");
+            }
+        });
+
+
+
+    });
+</script>
+
+
+{% endblock footer %}

@@ -77,6 +77,11 @@ class EnrolmentAdmin(admin.ModelAdmin):
         "modified_date",
     ]
 
+    search_fields = [
+        "student__user__last_name",
+        "basic_class__name",
+    ]
+
 
 class BasicClassAdmin(admin.ModelAdmin):
     inlines = [EnrolmentInline]

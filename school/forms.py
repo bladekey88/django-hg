@@ -65,7 +65,7 @@ class ClassEnrolForm(forms.ModelForm):
     student = forms.ModelMultipleChoiceField(
         required=True,
         label="Enroled Student(s)",
-        queryset=Student.objects.all(),
+        queryset=Student.objects.all().order_by("house", "year", "user__last_name"),
         widget=widgets.CheckboxSelectMultiple(
             attrs={
                 "size": "15",

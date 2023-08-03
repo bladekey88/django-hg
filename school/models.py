@@ -269,6 +269,9 @@ class BasicClass(models.Model):
 
 class Enrolment(models.Model):
     class Meta:
+        ordering = [
+            "student__user__last_name",
+        ]
         verbose_name = "Enrolment"
         verbose_name_plural = "Enrolments"
         constraints = [
