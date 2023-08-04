@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
-{% block title %}Add Class to {{slug}} {% endblock title %}
+{% block title %}Add Class to {{course.name}} {% endblock title %}
 {% block pagestyle %}
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
@@ -61,8 +61,9 @@
 {% block content %}
 
 <div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
-    <h3>Add Class to {{slug}}</h3>
-    <a class=" text-decoration-none" href="{% url 'school:course_detail' slug %}">Back to Course: {{slug}}</a>
+    <h3>Add Class to {{course.name}}</h3>
+    <a class=" text-decoration-none" href="{% url 'school:course_detail' course.slug%}">Back to Course: {{course.name}}
+        ({{course.course_code}})</a>
 </div>
 <div class="add-form">
     <form action="" method="post">

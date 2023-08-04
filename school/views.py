@@ -276,7 +276,9 @@ class CourseAdd(PermissionRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class CourseEdit(PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
+class CourseEdit(
+    LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView
+):
     permission_required = [
         "school.change_basiccourse",
     ]
@@ -297,15 +299,18 @@ class CourseEdit(PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
             return True
 
 
-class CourseDelete(PermissionRequiredMixin, DeleteView):
+class CourseDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     permission_required = [
-        "school.delete_basiccourse",
-        "school.delete_basicclass",
+        "school.change_basiccourse",
+        "school.change_basicclass",
     ]
     permission_denied_message = "Access Forbidden"
     model = BasicCourse
     template_name = "school/course_delete.html"
     success_url = reverse_lazy("school:courses_view")
+
+    # def get(self, request, slug, obj=None):
+    #     raise Exception(request.user.get_all_permissions())
 
 
 # Class Section
@@ -337,7 +342,8 @@ class ClassAdd(PermissionRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super(ClassAdd, self).get_context_data(**kwargs)
-        context["slug"] = self.kwargs["slug"]
+        context["course"] = BasicCourse.objects.get(slug=self.kwargs["slug"])
+        # context["slug"] = self.kwargs["slug"]
         return context
 
     def form_valid(self, form):

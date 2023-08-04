@@ -170,7 +170,7 @@
             {% endif %}
         </tbody>
     </table>
-    {% if request.user.is_school_staff %}
+    {% if request.user.is_school_staff or request.user.is_superuser %}
     <div class="course-management px-3 alert alert-warning border-danger border-3 rounded-1">
         <h5 class="mb-3 fw-bold">Staff Access: Course Management</h5>
         <div class="d-flex align-items-center gap-3 justify-content-between">

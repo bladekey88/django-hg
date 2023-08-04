@@ -32,24 +32,23 @@
     <h3>
         {{object.name}} ({{object.course_code}})
     </h3>
-    <a class=" text-decoration-none" href="{% url 'school:courses_view' %}">Back to Course List</a>
-
+    <a class=" text-decoration-none" href="{% url 'school:course_detail' object.slug %}">Back to {{object.name}}
+        ({{object.course_code}})</a>
 </div>
-<p>{{object.description}}</p>
 
-<div class="card border-danger text-center">
-    <div class="card-header bg-danger text-white text-center">
+<div class="card border-0 text-center rounded-0">
+    <div class="card-header bg-danger text-white text-center rounded-0">
         <h4 class="my-1">Delete Course</h4>
     </div>
-    <div class=" card-body">
-        {% if perms.school.delete_basiccourse %}
-        <div class="alert alert-danger text-danger fw-bold h6 border-3 border-danger border-rounded-0">
+    <div class=" card-body m-0 p-0">
+
+        <div class="alert alert-danger text-danger fw-bold h6 border-3 border-danger rounded-0">
             <p class="fw-bolder">All data associated to the course will be deleted. Please note that a
                 course cannot be deleted if there are attached classes.</p>
             <p class="my-2">
                 <span class="fw-bold border-3 border-danger border-bottom">Deletion is irreversible</span>
             </p>
-
+            {% if perms.school.delete_basiccourse %}
             <div class="mt-4 d-flex justify-content-around">
                 <a href="{% url 'school:course_detail' object.slug %}" class="btn btn-primary border-dark shadow h6"
                     type="btn">
@@ -60,9 +59,21 @@
                     <input class="btn btn-danger border-dark shadow h6" type="submit" value="Proceed With Deletion">
                 </form>
             </div>
+            {% else %}
+            <hr>
+            <div class="alert alert-warning border-0 border-start border-end border-5 border-danger rounded-0">
+                <div class="align-items-center">
+                    <h5 class="fw-bolder text-start border-bottom border-danger border-3 py-2">An Error Has Occurred
+                    </h5>
+                    <h6 class="fw-bold text-start">
+                        <p>You do not have appropriate permissions to delete this course.
+                            If you are the Course Owner, and wish to delete this course, contact the Headmaster's
+                            Office.</p>
+                    </h6>
+                </div>
+            </div>
+            {% endif %}
         </div>
-
-        {% endif %}
     </div>
 </div>
 
