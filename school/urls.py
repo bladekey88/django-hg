@@ -65,8 +65,8 @@ urlpatterns = [
     ),
     path(
         "staff/courses/<slug:slug>/",
-        views.CourseView.as_view(),
-        name="course_detail",
+        views.CourseViewStaff.as_view(),
+        name="course_detail_staff",
     ),
     path(
         "staff/courses/<slug:slug>/edit/",
@@ -145,5 +145,16 @@ urlpatterns = [
         "parent/children/<child_user>/",
         views.Child.as_view(),
         name="children",
+    ),
+    # General School Section
+    path(
+        "school/courses/",
+        views.CourseCategoryView.as_view(),
+        name="courses_view_all",
+    ),
+    path(
+        "school/courses/<slug:slug>/",
+        views.CourseView.as_view(),
+        name="course_detail",
     ),
 ]

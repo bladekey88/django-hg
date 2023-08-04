@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     "debug_toolbar",
-    "form_test",
+    "mail",
 ]
 
 MIDDLEWARE = [
@@ -189,7 +189,15 @@ LOGIN_REDIRECT_URL = "account:dashboard"
 LOGIN_URL = "account:login"
 LOGOUT_URL = "account:logout"
 LOGOUT_REDIRECT_URL = "account:login"
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "mail.hogwarts.wiz"
+EMAIL_HOST_USERNAME = "service-portal@hogwarts.wiz"
+EMAIL_HOST_PASSWORD = "7freN8hy1988!"
+EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = True
+
 
 LDAP_SYNC_URI = AUTH_LDAP_SERVER_URI
 LDAP_SYNC_BASE = "ou=people,dc=hogwarts,dc=wiz"

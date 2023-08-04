@@ -11,7 +11,7 @@ from django.views import View
 from django.views.generic import ListView, DetailView, TemplateView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from users.models import Parent, CustomUser, Student
-from school.models import BasicCourse, BasicClass, SchoolYear
+from school.models import BasicCourse, BasicClass, SchoolYear, CourseCategory
 from django.urls import reverse_lazy
 from school.forms import (
     CourseUpdateForm,
@@ -224,9 +224,18 @@ class Child(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         return render(request, template_name=self.template_name, context=context)
 
 
+# SCHOOL CURRICULUA SECTION START
+class CourseCategoryView(ListView):
+    model = CourseCategory
+    template_name = "school/course_category_list.html"
+
+
 class CoursesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = BasicCourse
     template_name = "school/course_list.html"
+
+    def get(self, request, obj=None):
+        return redirect("school:courses_view_all", permanent=True)
 
     # Use UserPassesTestMixin here rather than perm check
     # as Students also have that perm in their group
@@ -234,14 +243,15 @@ class CoursesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return self.request.user.is_school_staff() or self.request.user.is_superuser
 
 
-class CourseView(PermissionRequiredMixin, UserPassesTestMixin, DetailView):
-    permission_required = ["school.view_basiccourse"]
+class CourseView(DetailView):
     model = BasicCourse
     template_name = "school/course_detail.html"
     slug_url_kwarg = "slug"
 
-    def test_func(self):
-        return self.request.user.is_school_staff() or self.request.user.is_superuser
+
+class CourseViewStaff(View):
+    def get(self, request, slug):
+        return redirect("school:course_detail", slug=slug, permanent=True)
 
 
 class CourseAdd(PermissionRequiredMixin, CreateView):
@@ -250,6 +260,7 @@ class CourseAdd(PermissionRequiredMixin, CreateView):
     fields = [
         "name",
         "course_code",
+        "category",
         "course_type",
         "required",
         "description",

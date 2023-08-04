@@ -1,10 +1,40 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.urls import reverse
-from django.core.validators import MinLengthValidator
+from django.core.validators import MinLengthValidator, RegexValidator
 from users.models import Staff, Student
+from random import randint
 
 # Create your models here.
+
+
+class CourseCategory(models.Model):
+    class Meta:
+        verbose_name = "Course Category"
+        verbose_name_plural = "Course Categories"
+        ordering = ["name"]
+
+    name = models.CharField(
+        "Category Name",
+        max_length=50,
+        unique=True,
+        validators=[
+            MinLengthValidator(3),
+            RegexValidator(r"^[a-zA-Z0-9\s]*$", "Alphanumeric characters only"),
+        ],
+    )
+    code = models.CharField(
+        "Category Code",
+        max_length=6,
+        validators=[MinLengthValidator(3)],
+        unique=True,
+    )
+
+    def __str__(self) -> str:
+        return f"{self.name.lower().title()}"
+
+    def __repr__(self):
+        return f"{self.name.lower}{self.code}"
 
 
 class BasicCourse(models.Model):
@@ -18,6 +48,10 @@ class BasicCourse(models.Model):
     name = models.CharField("Course Name", max_length=50, unique=True)
     description = models.TextField(
         "Description", max_length=2500, null=True, blank=True
+    )
+    category = models.ForeignKey(
+        CourseCategory,
+        on_delete=models.PROTECT,
     )
     course_code = models.CharField("Course Code", max_length=10, unique=True)
 
@@ -51,7 +85,7 @@ class BasicCourse(models.Model):
         ELECTIVE = "E", "Elective"
 
     required = models.CharField(
-        "Course Category",
+        "Course Curriculum",
         choices=Required.choices,
         max_length=1,
         blank=True,
@@ -69,23 +103,23 @@ class BasicCourse(models.Model):
         unique=True,
     )
 
-    def _validate_course_category(self):
+    def _validate_course_curriculum(self):
         """The required field is only valid at OWL
         as any electives do not apply outside of that"""
-        INVALID_CATEGORY_FOR_COURSE_TYPE_ERROR = (
-            """The course category must not be set for non-OWL course types."""
+        INVALID_CURRICULUM_FOR_COURSE_TYPE_ERROR = (
+            """Course Curriculum must not be set for non-OWL course types."""
         )
-        OWL_COURSE_REQUIRED_CATEGORY_ERROR = (
-            """OWL courses must have a Course Category."""
+        OWL_COURSE_REQUIRED_CURRICULUM_ERROR = (
+            """OWL courses must have a Course Curriculum."""
         )
 
         if self.course_type != self.CourseType.OWL and self.required:
-            raise ValidationError(INVALID_CATEGORY_FOR_COURSE_TYPE_ERROR)
+            raise ValidationError(INVALID_CURRICULUM_FOR_COURSE_TYPE_ERROR)
         elif self.course_type == self.CourseType.OWL and not self.required:
-            raise ValidationError(OWL_COURSE_REQUIRED_CATEGORY_ERROR)
+            raise ValidationError(OWL_COURSE_REQUIRED_CURRICULUM_ERROR)
 
     def clean(self, *args, **kwargs):
-        self._validate_course_category()
+        self._validate_course_curriculum()
         if not self.slug:
             self.slug = self.course_code.lower()
 
@@ -245,7 +279,7 @@ class BasicClass(models.Model):
         super().save(*args, **kwargs)
 
     def get_class_code(self):
-        return f"{self.name[:3].upper()}-{self.course.course_code}Y{self.school_year.get_two_year_format()}"
+        return f"{self.course.course_code}Y{self.school_year.get_two_year_format()}-{str(randint(1,1000)).zfill(4)}"
 
     def __str__(self):
         return f"{self.course.name} ({self.get_class_code()})"
@@ -297,10 +331,7 @@ class Enrolment(models.Model):
         SUSPENDED = "S", "Suspended"
 
     student_class_status = models.CharField(
-        "Status",
-        max_length=1,
-        blank=False,
-        choices=ClassStatus.choices,
+        "Status", max_length=1, blank=False, choices=ClassStatus.choices, default="A"
     )
 
     def __str__(self):

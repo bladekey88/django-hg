@@ -94,7 +94,7 @@
     <h3 class="pt-1">
         <span class="fw-bolder">Course</span> | {{object.name}}
     </h3>
-    <a class=" text-decoration-none" href="{% url 'school:courses_view' %}">Back to Course List</a>
+    <a class=" text-decoration-none" href="{% url 'school:courses_view_all' %}">Back to Course List</a>
 </div>
 <p>{{object.description}}</p>
 <div class="extra-info">
@@ -123,7 +123,7 @@
                 <td>
                     {% if object.owner %}
                     <a target="_blank" href="{% url 'account:profile_other_user' object.owner.user.uid %}">
-                        {{object.owner.user.full_name}}
+                        {{object.owner.user.full_common_name}}
                     </a>
                     {% endif %}
                 </td>
@@ -143,9 +143,13 @@
             {% for classes in object.basicclass_set.all %}
             <tr>
                 <td>
+                    {% if request.user.is_school_staff %}
                     <a href="{% url 'school:class_detail' object.course_code classes.slug %}">
                         {{classes.name}}
                     </a>
+                    {% else %}
+                    {{classes.name}}
+                    {% endif %}
                 </td>
                 <td>{{classes.class_code}}</td>
                 <td>{{classes.school_year}}</td>
@@ -155,7 +159,7 @@
                         <li>
                             <a class="text-decoration-none" target="_blank"
                                 href="{% url 'account:profile_other_user' teacher.user.uid %}">
-                                {{teacher.user.full_name}}
+                                {{teacher.user.full_common_name}}
                             </a>
                         </li>
                         {% endfor %}
@@ -166,26 +170,33 @@
             {% endif %}
         </tbody>
     </table>
-
-    <div class="course-management">
-        <h5 class="mb-3">Course Management</h5>
-        <div class="d-flex align-items-center gap-3">
-            <a type="button" class="btn  btn-outline-primary text-decoration-none m-0 border-2 fw-bolder"
-                href="{% url 'school:class_add' object.slug %}" role="button">
-                Add Class
-            </a>
-            <a type="button" class="btn  btn-outline-primary text-decoration-none m-0 border-2 fw-bolder"
-                href="{% url 'school:course_edit' object.slug %}" role="button">
-                Edit Course
-            </a>
-            {% if perms.school.delete_basiccourse %}
-            <a class="btn btn-danger text-decoration-none m-0 border-secondary border-1 fw-bolder"
-                href="{% url 'school:course_delete' object.slug %}" role="button">
-                Delete Course
-            </a>
-            {% endif %}
+    {% if request.user.is_school_staff %}
+    <div class="course-management px-3 alert alert-warning border-danger border-3 rounded-1">
+        <h5 class="mb-3 fw-bold">Staff Access: Course Management</h5>
+        <div class="d-flex align-items-center gap-3 justify-content-between">
+            <div class="course-management-add-class">
+                <a type="button" class="btn btn-primary border-secondary text-decoration-none m-0 border-2 fw-bolder"
+                    href="{% url 'school:class_add' object.slug %}" role="button">
+                    Add Class
+                </a>
+            </div>
+            <div class="course-management-course-modify d-flex align-items-center gap-3">
+                {% if perms.school.change_basiccourse or request.user == object.owner.user %}
+                <a type="button" class="btn border-secondary btn-primary text-decoration-none m-0 border-2 fw-bolder"
+                    href="{% url 'school:course_edit' object.slug %}" role="button">
+                    Edit Course
+                </a>
+                {% endif %}
+                {% if perms.school.delete_basiccourse or request.user == object.owner.user %}
+                <a class="btn btn-danger text-decoration-none m-0 border-secondary border-1 fw-bolder"
+                    href="{% url 'school:course_delete' object.slug %}" role="button">
+                    Delete Course
+                </a>
+                {% endif %}
+            </div>
         </div>
     </div>
+    {% endif %}
 </div>
 
 

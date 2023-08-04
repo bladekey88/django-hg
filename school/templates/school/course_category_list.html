@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Courses{% endblock title %}
+{% block pagestyle %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
+
+    :root {
+        --color-main: #009879;
+        --color-main-dark: #006c57;
+        --color-highlight: #fafa4e;
+    }
+
+    * {
+
+        box-sizing: border-box !important;
+        font-family: Raleway;
+        padding: 0;
+        margin: 0;
+    }
+
+    s .custom-container {
+        border: 1px solid #eeeeee;
+        margin-left: 15em;
+        margin-top: 3rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0px;
+        align-items: center;
+        vertical-align: middle;
+        width: 75%;
+        box-shadow: 10px solid black;
+    }
+
+    h1 {
+        text-align: center;
+    }
+
+
+    .course-categories {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        align-items: stretch;
+        align-content: center;
+        box-sizing: border-box;
+        gap: 10px 20px;
+        min-height: 100vh;
+        background-color: #fcfcfc;
+    }
+
+    .category {
+        flex: 0 20%;
+        max-width: 20.75em;
+        min-height: 20.75em;
+        overflow: hidden;
+        border-radius: .5em;
+        text-decoration: none;
+        background: white;
+        margin: 1em;
+        padding: 1rem 1rem 0 1rem;
+        box-shadow: 0 1.5em 2.5em -.5em rgb(0, 0, 0, 0.1);
+        transition: transform .45s ease, background .45s ease;
+        /* border: 0.1px solid var(--color-main-dark); */
+        box-shadow: 0.5px 0px 3px var(--color-main-dark);
+    }
+
+
+    .category h3 {
+        color: #2E3C40;
+        font-size: 1.5em;
+        font-weight: 600;
+        line-height: 1;
+        padding-bottom: .5em;
+        margin: 0 0 0.142857143em;
+        border-bottom: 2px solid var(--color-main);
+        transition: color .45s ease, border .45s ease;
+    }
+
+
+    .category h4 {
+        color: #627084;
+        text-transform: uppercase;
+        font-size: 1.125em;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0.1em;
+        margin: 0 0 1.777777778em;
+        transition: color .45s ease;
+    }
+
+    .link-text {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        line-height: 1.2;
+        margin: auto 0 0;
+        transition: color .25s ease;
+    }
+
+    .link-text i {
+        opacity: 0;
+        color: var(--color-highlight)
+    }
+
+    .category:hover {
+        background: var(--color-main);
+        transform: scale(1.02);
+    }
+
+    .category:hover h3 {
+        color: #FFFFFF;
+        border-color: var(--color-highlight);
+        transition: all 250ms ease-in;
+    }
+
+    .category:hover .link-text {
+        display: inline;
+        color: #ffffff;
+        font-weight: 600;
+        line-height: 1.2;
+        margin: auto 0 0;
+        /* transition: color .45s ease; */
+        transition: all 250ms ease-in;
+    }
+
+    .link-text:hover i {
+        opacity: 1;
+        text-decoration: none;
+        transition: all 250ms ease;
+    }
+
+    .category:hover .link-text:hover {
+        color: var(--color-highlight)
+    }
+
+    @media screen and (max-width:900px) {
+        .course-categories {
+            display: block;
+            text-align: center;
+            box-sizing: border-box;
+            min-height: 100vh;
+            background-color: #fcfcfc;
+            /* border: 2px solid darkblue; */
+        }
+    }
+</style>
+{% endblock pagestyle %}
+{% block contentclass %}container px-3 my-5 {% endblock contentclass %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between border-1 border-bottom border-dark">
+    <h3>List Of Courses</h3>
+    {% if perms.school.add_basiccourse %}
+    <h3>
+        <a class="btn btn-outline-primary text-decoration-none fw-bold border-primary border-3"
+            href="{% url 'school:course_add' %}">
+            Add Course
+        </a>
+    </h3>
+    {% endif %}
+</div>
+<div class="course-categories">
+    {% for o in object_list %}
+    {% if o.basiccourse_set.all|length > 0 %}
+    <div class="category">
+        <div class="category-header">
+            <h3>{{o.name}}</h3>
+        </div>
+        {% for course in o.basiccourse_set.all %}
+        <p>
+            <a href='{% url "school:course_detail" course.slug %}' class="link-text text-decoration-none">
+                <h6>{{course.name}}
+                    <i class="ms-1 bi bi-arrow-right-circle"></i>
+                </h6>
+            </a>
+        </p>
+        {% endfor course %}
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+
+
+
+{% endblock content %}

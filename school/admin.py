@@ -1,5 +1,7 @@
+from typing import Optional
 from django.contrib import admin
-from .models import BasicCourse, BasicClass, SchoolYear, Enrolment
+from django.http.request import HttpRequest
+from .models import BasicCourse, BasicClass, SchoolYear, Enrolment, CourseCategory
 
 # Register your models here.
 
@@ -14,12 +16,13 @@ class BasicCourseAdmin(admin.ModelAdmin):
             else:
                 return f"{short_description}"
 
-    list_per_page = 10
+    list_per_page = 20
     empty_value_display = "<No Value>"
     list_display = [
         "name",
         "course_code",
         "course_type",
+        "category",
         "required",
         "get_description",
         "owner",
@@ -27,6 +30,7 @@ class BasicCourseAdmin(admin.ModelAdmin):
 
     list_filter = [
         "course_type",
+        "category",
         "required",
         "owner",
     ]
@@ -140,7 +144,33 @@ class SchoolYearAdmin(admin.ModelAdmin):
     )
 
 
+class BasicCourseInline(admin.TabularInline):
+    fields = [
+        "name",
+        "course_code",
+        "course_type",
+        "required",
+        "owner",
+    ]
+    model = BasicCourse
+    can_delete = False
+    extra = 0
+
+    def has_add_permission(self, request, obj=None) -> bool:
+        return False
+
+    def has_change_permission(self, request, obj=None) -> bool:
+        return False
+
+
+class CourseCategoryAdmin(admin.ModelAdmin):
+    list_display = ["name", "code"]
+    search_fields = ["name"]
+    inlines = [BasicCourseInline]
+
+
 admin.site.register(BasicCourse, BasicCourseAdmin)
 admin.site.register(BasicClass, BasicClassAdmin)
 admin.site.register(SchoolYear, SchoolYearAdmin)
 admin.site.register(Enrolment, EnrolmentAdmin)
+admin.site.register(CourseCategory, CourseCategoryAdmin)
