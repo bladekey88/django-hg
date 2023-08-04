@@ -3,7 +3,7 @@
 {% block title %}Login{% endblock %}
 {% block pagestyle %}
 <style>
-    body {
+    main {
         background: rgba(0, 0, 0, 0.15);
         background-image: url("{% get_random_bing_image %}");
         background-size: cover;
@@ -75,4 +75,5 @@
         </form>
     </div>
 </div>
-{% endblock %}
+{% endblock content %}
+{% block pagefooter %}{% endblock pagefooter %}
