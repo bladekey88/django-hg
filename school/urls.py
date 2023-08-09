@@ -27,20 +27,20 @@ urlpatterns = [
     path(
         "staff/view-students/",
         views.StaffViewStudent.as_view(),
-        name="staff_view_students",
+        name="old_staff_view_students",
     ),
     path(
-        "staff/view-students/house/<house>/",
-        views.StaffViewStudentHouse.as_view(),
-        name="staff_house",
+        "school/view-students/house/<house>/",
+        views.ViewStudentHouse.as_view(),
+        name="student_house",
     ),
     path(
-        "staff/view-students/a-z/<letter>/",
-        views.StaffViewStudentAlpha.as_view(),
-        name="staff_a_z",
+        "school/view-students/a-z/<letter>/",
+        views.ViewStudentAlpha.as_view(),
+        name="student_a_z",
     ),
     path(
-        "staff/view-students/year/<year>/",
+        "school/view-students/year/<year>/",
         views.StaffViewStudentYear.as_view(),
         name="staff_year",
     ),
@@ -156,5 +156,10 @@ urlpatterns = [
         "school/courses/<slug:slug>/",
         views.CourseView.as_view(),
         name="course_detail",
+    ),
+    path(
+        "school/view-students/",
+        views.ViewStudents.as_view(),
+        name="view_students",
     ),
 ]

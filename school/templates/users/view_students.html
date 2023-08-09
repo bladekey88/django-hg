@@ -1,5 +1,13 @@
 {% extends "base.html" %}
-{% block title %}View Students{% endblock title %}
+{% block title %}Students{% endblock title %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">Students</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
+
 {% block pagestyle %}
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
@@ -104,7 +112,7 @@
 {% block content %}
 <div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
     <h3 class="pt-1">
-        <span class="fw-bold">View Students</span>
+        <span class="fw-bold">Students</span>
     </h3>
     <a class="text-decoration-none" href="{% url 'school:home'%}">
         Back to Home
@@ -122,14 +130,14 @@
         {% if house.name|lower == request.user.student.get_house_display|lower %}
 
         <a class="fw-bolder btn btn-lg btn-{{house.name|lower}}" role="link"
-            href="{% url 'school:staff_house' house.name|lower %}">
+            href="{% url 'school:student_house' house.name|lower %}">
             {{house.name|lower|capfirst}}
             <span class="badge rounded-pill"
                 style="border: solid 1px #b3b3b3; background-color: rgba(var(--house-{{request.user.student.get_house_display|lower}}));">Sorted</span>
         </a>
         {%else %}
         <a class="fw-bolder btn btn-lg btn-{{house.name|lower}}" role="link"
-            href="{% url 'school:staff_house' house.name|lower %}">
+            href="{% url 'school:student_house' house.name|lower %}">
             {{house.name|lower|capfirst}}
         </a>
         {% endif %}
@@ -169,7 +177,7 @@
     {% for k,v in alpha.items %}
     {% if v > 0 %}
     <a class="btn btn-sm text-decoration-none btn-outline-primary fw-bold border-2" role="link"
-        href="{% url 'school:staff_a_z' k %}">{{k|upper}}</a>
+        href="{% url 'school:student_a_z' k %}">{{k|upper}}</a>
     {% else %}
     <a class="btn btn-sm text-decoration-none text-secondary pe-none disabled">{{k|upper}}</a>
     {% endif %}

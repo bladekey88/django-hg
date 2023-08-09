@@ -46,8 +46,8 @@ INSTALLED_APPS = [
     "ldap_sync",
     "crispy_forms",
     "crispy_bootstrap5",
-    "debug_toolbar",
     "mail",
+    "debug_toolbar",
 ]
 
 MIDDLEWARE = [
@@ -130,6 +130,10 @@ USE_L10N = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = "static/"
+STATICFILES_DIRS = [
+    "userprofile/static/",
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

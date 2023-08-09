@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import (
     UserPassesTestMixin,
 )
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.http import HttpResponse, Http404
 from django.views import View
 from django.views.generic import ListView, DetailView, TemplateView
@@ -86,11 +86,24 @@ class Staff(LoginRequiredMixin, View):
             return render(request, self.template_name)
 
 
-class StaffViewStudent(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
-    permission_required = ["users.view_student", "users.view_staff"]
+class StaffViewStudent(View):
+    def get(self, request):
+        return redirect("school:view_students", permanent=True)
+
+
+class ViewStudents(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = [
+        "users.view_student",
+    ]
     template_name = "users/view_students.html"
 
     def generate_alphabet_index(self):
+        """
+        Iterate through student objects add increment letter dict using
+        surname. After iteration, in template check if count/len>0 render in
+        colour if exists, else disabled/greyed out if not. In the corresponding view,
+        raise 404 is letter has no surnames that begin with that letter
+        """
         import string
 
         letters = {letter: 0 for letter in string.ascii_lowercase}
@@ -107,9 +120,9 @@ class StaffViewStudent(LoginRequiredMixin, PermissionRequiredMixin, TemplateView
         return context
 
 
-class StaffViewStudentAlpha(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+class ViewStudentAlpha(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["users.view_student", "users.view_staff"]
-    template_name = "users/staff_a_z.html"
+    template_name = "users/view_students_a_z.html"
 
     def get(self, request, letter):
         letter = letter.upper()
@@ -129,9 +142,9 @@ class StaffViewStudentAlpha(LoginRequiredMixin, PermissionRequiredMixin, Templat
         return render(request, self.template_name, context=context)
 
 
-class StaffViewStudentHouse(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+class ViewStudentHouse(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["users.view_student", "users.view_staff"]
-    template_name = "users/staff_house.html"
+    template_name = "users/view_students_house.html"
 
     def get(self, request, house):
         if house.lower() in [e.name.lower() for e in Student.House]:
@@ -144,17 +157,21 @@ class StaffViewStudentHouse(LoginRequiredMixin, PermissionRequiredMixin, Templat
                     "user__first_name",
                 )
             )
-            context = {}
-            context["qs"] = qs
-            context["house"] = house
-            return render(request, self.template_name, context=context)
+            if qs.count() > 0:
+                context = {}
+                context["qs"] = qs
+                context["house"] = house
+                return render(request, self.template_name, context=context)
+            else:
+                raise Http404("House has no students.")
+
         else:
             raise Http404("House does not exist or is not accessible.")
 
 
 class StaffViewStudentYear(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["users.view_student", "users.view_staff"]
-    template_name = "users/staff_year.html"
+    template_name = "users/view_students_year.html"
 
     def get(self, request, year):
         if year.lower() in [e.name.lower() for e in Student.Year]:
@@ -167,10 +184,13 @@ class StaffViewStudentYear(LoginRequiredMixin, PermissionRequiredMixin, Template
                     "user__first_name",
                 )
             )
-            context = {}
-            context["qs"] = qs
-            context["year"] = year
-            return render(request, self.template_name, context=context)
+            if qs.count() > 0:
+                context = {}
+                context["qs"] = qs
+                context["year"] = year
+                return render(request, self.template_name, context=context)
+            else:
+                raise Http404("Year has no students.")
         else:
             raise Http404("Year does not exist or is not accessible.")
 
@@ -365,6 +385,9 @@ class ClassEdit(PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
         school_class = self.get_object()
         teacher_all = school_class.teacher.all()
         output = [teacher.user.id for teacher in teacher_all]
+        if not school_class.course.owner:
+            return True
+
         if self.request.user == school_class.course.owner.user:
             return True
         elif (

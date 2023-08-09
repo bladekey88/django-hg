@@ -1,5 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Add Schedule{% endblock title %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'school:schedules_view' %}" class="breadcrumbs">
+        <span property="name">School Schedules</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">Add School Schedule</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
 {% block pagestyle %}
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');

@@ -1,5 +1,8 @@
+from typing import Any
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.db.models.query import QuerySet
+from django.http.request import HttpRequest
 from .models import CustomUser, Student, QuidditchPlayer, Staff, Parent, SchoolHouse
 from .forms import CustomUserChangeForm, CustomUserCreationForm
 from school.models import BasicCourse, BasicClass
@@ -99,6 +102,8 @@ class QuidditchPlayerAdmin(admin.ModelAdmin):
         "student__user__email",
     ]
 
+    readonly_fields = ["get_eligible_for_match"]
+
     @admin.display(description="Student", ordering="student__user__last_name")
     def get_student(self, obj):
         return obj.student.user.full_common_name()
@@ -113,6 +118,10 @@ class QuidditchPlayerAdmin(admin.ModelAdmin):
     @admin.display(description="Year", ordering="student__year")
     def get_year(self, obj):
         return f" {obj.student.get_year_display()} Year"
+
+    @admin.display(description="Eligible to Play")
+    def get_eligible_for_match(self, obj):
+        return obj.eligible_for_match()
 
     ordering = ["student__house", "-is_captain", "student__user__last_name"]
 
@@ -146,7 +155,29 @@ class QuidditchPlayerAdmin(admin.ModelAdmin):
                 ),
             },
         ),
+        (
+            "Overall Eligibility",
+            {
+                "fields": ("get_eligible_for_match",),
+            },
+        ),
     )
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            if obj.student.user.is_active is False:
+                return False
+        return super(QuidditchPlayerAdmin, self).has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj:
+            if obj.student.user.is_active is False:
+                return False
+        return super(QuidditchPlayerAdmin, self).has_delete_permission(request, obj)
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet[Any]:
+        qs = super().get_queryset(request)
+        return qs.filter(student__user__is_active=True)
 
 
 class CustomUserAdmin(UserAdmin):
@@ -180,7 +211,7 @@ class CustomUserAdmin(UserAdmin):
         cn = obj.common_name
         if obj.middle_name:
             mn = obj.middle_name[0]
-            return f"{ln}, {fn}{mn} ({cn})"
+            return f"{ln}, {fn} {mn} ({cn})"
         else:
             return f"{ln}, {fn} ({cn})"
 
@@ -274,6 +305,12 @@ class CustomUserAdmin(UserAdmin):
     readonly_fields = ["get_fullname"]
     ordering = ("uid",)
 
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            if obj.is_active is False and not request.user.is_superuser:
+                return False
+        return super(CustomUserAdmin, self).has_change_permission(request, obj)
+
 
 class StudentAdmin(admin.ModelAdmin):
     inlines = [QuidditchInline, ParentInline, BasicClassInline]
@@ -343,6 +380,12 @@ class StudentAdmin(admin.ModelAdmin):
         "user__last_name",
         "user__first_name",
     )
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            if obj.user.is_active is False:
+                return False
+        return super(StudentAdmin, self).has_change_permission(request, obj)
 
 
 class ParentAdmin(admin.ModelAdmin):

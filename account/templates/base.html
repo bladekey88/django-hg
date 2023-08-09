@@ -16,11 +16,26 @@
 				font-family: 'Open Sans', sans-serif;
 			}
 
+			a {
+				text-decoration: none;
+			}
+
+			a:hover {
+				text-decoration: underline;
+			}
+
 			.wrapper {
 				box-sizing: border-box;
 				min-height: 100vh;
 				display: flex;
 				flex-direction: column;
+			}
+
+			header {
+				position: sticky;
+				top: 0px;
+				z-index: 1;
+
 			}
 
 			header,
@@ -40,6 +55,83 @@
 			main {
 				flex-grow: 1;
 				background-color: #fff
+			}
+
+			.secondary-nav {
+				display: flex;
+				align-items: center;
+				background-color: #f9f9fb;
+				border-bottom: 1px solid #cdcdcd;
+				margin: 0;
+				min-height: 1rem;
+				padding: 0;
+
+			}
+
+			ol.breadcrumb-list {
+				line-height: 1.2;
+				list-style: none;
+				padding: 0.5rem 0;
+				margin: 0;
+			}
+
+			.nav-breadcrumbs li:first-child,
+			.nav-breadcrumbs li:last-child {
+				display: inline-flex;
+			}
+
+			ol.breadcrumb-list li {
+				display: none;
+			}
+
+			.search {
+				display: none;
+			}
+
+			@media screen and (min-width: 1200px) {
+				ol.breadcrumb-list li {
+					display: inline-flex;
+				}
+
+				.search {
+					display: block;
+				}
+			}
+
+			ol.breadcrumb-list li a {
+				align-items: center;
+				display: flex;
+				color: rgb(13, 110, 253);
+			}
+
+			ol.breadcrumb-list li a:hover {
+				font-weight: bolder;
+
+			}
+
+			ol.breadcrumb-list li [property=name] {
+				display: inline-block;
+				margin-right: 0.5rem;
+			}
+
+			ol.breadcrumb-list li .breadcrumbs:after {
+				background-color: #b3b3b3;
+				content: "";
+				display: block;
+				flex-shrink: 0;
+				height: 12px;
+				margin-right: 0.5rem;
+				mask-size: 12px;
+				mask-image: url("{% static 'core/img/chevron.svg' %}");
+				-webkit-mask-size: 12px;
+				-webkit-mask-image: url("{% static 'core/img/chevron.svg' %}");
+				transform: rotate(-90deg);
+				width: 12px;
+			}
+
+			ol.breadcrumb-list li a.breadcrumbs-current-page:hover {
+				font-weight: normal;
+				text-decoration: none;
 			}
 		</style>
 
@@ -125,7 +217,6 @@
 			.card-inactive img {
 				opacity: 0.3;
 				filter: grayscale(100%);
-
 			}
 
 			.card-inactive:hover {
@@ -145,13 +236,19 @@
 	</head>
 
 
+	{% if request.user.is_school_staff  or request.user.is_superuser %}
+	<div class="alert alert-danger bg-danger text-black m-0 p-3 rounded-0 text-center border-0 shadow-lg">
+		<span style="font-weight:1000;">SITE IS IN DEBUG MODE</span>
+	</div>
+	{% endif %}
 
 	<body class="{% block bodyclass %} {% endblock bodyclass %}">
 		<div class="wrapper">
+
 			<header>
 				{% block navbar %}
 				<!-- Navbar -->
-				<nav class="navbar sticky-top navbar-expand-lg navbar-dark bg-dark">
+				<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
 					<div class="container d-flex">
 						<div class="p-2 flex-grow-1">
 							<a class="navbar-brand fw-bold" href="{% url 'school:home' %}">Hogwarts Service Portal</a>
@@ -159,14 +256,13 @@
 						{% if request.user.is_authenticated %}
 						<div>
 							<a class="navbar-brand fs-6">
-								<a class="me-1 align-middle text-white text-decoration-none"
-									href="{% url 'account:profile' %}">
+								<a class="me-1 align-middle text-white" href="{% url 'account:profile' %}">
 									<i class="flex-shrink-0 me-1 bi bi-person-circle"></i>
 									Logged in as <span class='fw-bolder'>
 										{{ request.user.uid|default:request.user.uid }}</span></a>
 							</a>
-							{% if request.user.is_staff %}
-							<a class="me-2 align-middle text-white text-decoration-none border-0 border-start border-2 border-warning"
+							{% if request.user.is_school_staff %}
+							<a class="me-2 align-middle text-white border-0 border-start border-2 border-warning"
 								href="{% url 'admin:login' %}">
 								<i
 									class="ms-2 text-warning text-decoration-underline flex-shrink-0 me-1 bi bi-shield-lock-fill"></i>
@@ -183,9 +279,27 @@
 					</div>
 				</nav>
 				{% endblock navbar %}
+				{% block secondary-navbar %}
+				<div class="secondary-nav">
+					<div class="container d-flex justify-content-between align-items-center">
+						<div class="nav-breadcrumbs ps-2">
+							<ol class="breadcrumb-list">
+								<li>
+									<a href="{% url 'school:home' %}" class="breadcrumbs root-breadcrumb">
+										<span property="name">Home</span>
+									</a>
+								</li>
+								{% block breadcrumbs_current_page %}{% endblock %}
+							</ol>
+						</div>
+						<div class="search">Search</div>
+					</div>
+				</div>
+				{% endblock secondary-navbar %}
 			</header>
 			<main>
-				<div id="content" class=" {% block contentclass %}container px-3 py-5 mt-5 {% endblock contentclass %}">
+				<div id=" content"
+					class=" {% block contentclass %}container px-3 py-5 mt-5 {% endblock contentclass %}">
 					{% if messages %}
 					<ul class="messages">
 						{% for message in messages %}

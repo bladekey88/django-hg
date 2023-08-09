@@ -1,5 +1,17 @@
 {% extends "base.html" %}
 {% block title %}{{letter|capfirst}} Students{% endblock title %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'school:view_students' %}" class="breadcrumbs">
+        <span property="name">Students</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">Surname begins with {{letter}}</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
 {% block pagestyle %}
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
@@ -92,7 +104,7 @@
     <h3 class="pt-1">
         <span class="fw-bold">Surname</span> | {{letter|capfirst}}
     </h3>
-    <a class=" text-decoration-none" href="{% url 'school:staff_view_students'%}">
+    <a class=" text-decoration-none" href="{% url 'school:view_students'%}">
         Back to View Students
     </a>
 </div>
@@ -113,8 +125,7 @@
             {% for student in qs %}
             <tr>
                 <td>
-                    <a href="{% url 'school:student_profile' student.user.uid%}" target="_blank"
-                        rel="noopener noreferrer">
+                    <a href="{% url 'school:student_profile' student.user.uid%}" rel="noopener noreferrer">
                         {{student.user.title}} {{student.user.full_name}} ({{student.user.common_name}})
                     </a>
                 </td>

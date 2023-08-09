@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Courses{% endblock title %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">Courses</span>
+    </a>
+</li>
+{% endblock %}
 {% block pagestyle %}
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
@@ -159,6 +166,8 @@
     }
 </style>
 {% endblock pagestyle %}
+
+
 {% block contentclass %}container px-3 my-5 {% endblock contentclass %}
 {% block content %}
 <div class="d-flex align-items-center justify-content-between border-1 border-bottom border-dark">

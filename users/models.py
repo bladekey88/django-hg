@@ -352,6 +352,23 @@ class QuidditchPlayer(models.Model):
         choices=QuidditchPosition.choices,
     )
 
+    def eligible_for_match(self):
+        """
+        Returns True if the player can play in matches.
+        Any other return value is equivalent to False
+        """
+
+        if self.student.user.is_active:  # User inactive
+            return (
+                True
+                if self.team_position
+                and self.team_member_type
+                and not self.is_suspended
+                else False
+            )
+        else:
+            return False
+
     def clean(self, *args, **kwargs):
         USER_IS_NOT_STUDENT_ERROR = f"""
         {self.student.user.full_common_name()} cannot be on a Quidditch Team
