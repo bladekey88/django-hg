@@ -7,7 +7,11 @@ app_name = "school"
 urlpatterns = [
     path("", views.home, name="home"),
     # Student Section
-    path("student/", views.StudentLandingView.as_view(), name="student_main"),
+    path(
+        "student/",
+        views.StudentLandingView.as_view(),
+        name="student_main",
+    ),
     path(
         "student/student/<student>/",
         views.StudentProfileView.as_view(),
@@ -45,11 +49,6 @@ urlpatterns = [
         name="staff_year",
     ),
     # Course Section
-    path(
-        "staff/courses/",
-        views.CoursesView.as_view(),
-        name="courses_view",
-    ),
     # This needs to be added here to ensure that the slug path does
     # not override this url. This page is not really used directly, but is a
     # useful table list of all the classes

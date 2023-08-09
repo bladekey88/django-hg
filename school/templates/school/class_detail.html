@@ -163,7 +163,15 @@
                 <td>{{enrolment.student.user.idnumber}}</td>
                 <td>{{enrolment.student.get_house_display}}</td>
                 <td>{{enrolment.student.get_year_display}}</td>
-                <td>{{enrolment.get_student_class_status_display}}</td>
+                <td>
+                    <code>
+                    {% if request.user == enrolment.student.user or request.user.is_school_staff or request.user.is_superuser %}
+                    {{enrolment.get_student_class_status_display}}
+                    {% else %}
+                    <span class="text-secondary">Insufficent Permissions</span>
+                    {% endif %}
+                </code>
+                </td>
             </tr>
 
             {% endfor %}

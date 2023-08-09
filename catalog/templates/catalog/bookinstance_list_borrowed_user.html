@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Hogwarts Library: {{user}}{% endblock title %}
+{% block brand %}Hogwarts Library{% endblock brand %}
+{% block brandurl %}{% url "catalog:index" %}{% endblock brandurl %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'catalog:index' %}" class="breadcrumbs">
+        <span property="name">Library</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">{{user}} Borrowed Books</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
+{% block contentclass %}container px-3 my-4{% endblock contentclass%}
+
+{% block content %}
+<h1>Borrowed books</h1>
+
+{% if bookinstance_list %}
+<ul>
+
+    {% for bookinst in bookinstance_list %}
+    <li class="{% if bookinst.is_overdue %}text-danger{% endif %}">
+        <a href="{% url 'catalog:book-detail' bookinst.book.pk %}">{{ bookinst.book.title }}</a>
+        ({{ bookinst.due_back }})
+    </li>
+    {% endfor %}
+</ul>
+
+{% else %}
+<p>There are no books borrowed.</p>
+{% endif %}
+{% endblock %}

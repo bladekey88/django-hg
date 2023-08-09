@@ -21,6 +21,7 @@ from school.forms import (
     ScheduleUpdateForm,
     ScheduleAddForm,
 )
+from django.db.models import Q
 
 
 # Student Section
@@ -54,9 +55,14 @@ class StudentProfileView(LoginRequiredMixin, PermissionRequiredMixin, View):
             raise Http404(f"Student Not Found: {e}")
 
 
-class StudentLandingView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+class StudentLandingView(
+    LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, TemplateView
+):
     permission_required = ["users.view_student"]
-    template_name = "users/staff_landing.html"
+    template_name = "users/student_landing.html"
+
+    def test_func(self):
+        return self.request.user.is_student() or self.request.user.is_superuser
 
     def get(self, request):
         if not request.user.is_student() and not request.user.is_superuser:
@@ -119,10 +125,25 @@ class ViewStudents(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         context["alpha"] = self.generate_alphabet_index()
         return context
 
+    def post(self, request):
+        search_string = request.POST["search-student-text"].strip()
+        context = self.get_context_data()
+        if len(search_string) >= 3:
+            q1 = Q(user__first_name__icontains=search_string)
+            q2 = Q(user__common_name__icontains=search_string)
+            q3 = Q(user__last_name__icontains=search_string)
+            students = Student.objects.filter(q1 | q2 | q3)
+            context["query"] = search_string
+            context["students"] = students
+        else:
+            context["query_error"] = True
+        return render(request, self.template_name, context=context)
+
 
 class ViewStudentAlpha(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["users.view_student", "users.view_staff"]
     template_name = "users/view_students_a_z.html"
+    paginate_by = 10
 
     def get(self, request, letter):
         letter = letter.upper()
@@ -342,18 +363,15 @@ class ClassesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return self.request.user.is_school_staff() or self.request.user.is_superuser
 
 
-class ClassView(PermissionRequiredMixin, UserPassesTestMixin, DetailView):
+class ClassView(PermissionRequiredMixin, DetailView):
     permission_required = ["school.view_basicclass"]
     model = BasicClass
     template_name = "school/class_detail.html"
     slug_url_kwarg = "class_slug"
 
-    def test_func(self):
-        return self.request.user.is_school_staff() or self.request.user.is_superuser
-
 
 class ClassAdd(PermissionRequiredMixin, CreateView):
-    permission_required = ["school.view_basicclass"]
+    permission_required = ["school.add_basicclass"]
     model = BasicClass
     form_class = ClassAddForm
     template_name = "school/class_add.html"
@@ -374,6 +392,7 @@ class ClassAdd(PermissionRequiredMixin, CreateView):
 
 class ClassEdit(PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
     permission_required = [
+        "school.add_basicclass",
         "school.change_basicclass",
     ]
     model = BasicClass

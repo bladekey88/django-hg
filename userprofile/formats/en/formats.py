@@ -1,4 +1,4 @@
-DATE_FORMAT = "j m Y"  # '25 Oct 2006'
+DATE_FORMAT = "d/m/Y"  # '25 Oct 2006'
 TIME_FORMAT = "H:i:s"  # '14:30:00
 DATETIME_FORMAT = "d/m/Y, H:i:s"  # '25/10/2006, 14:30:00.'
 YEAR_MONTH_FORMAT = "F Y"  # 'October 2006'

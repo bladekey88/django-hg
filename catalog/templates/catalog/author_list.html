@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Hogwarts Library: Authors{% endblock title %}
+{% block brand %}Hogwarts Library{% endblock brand %}
+{% block brandurl %}{% url "catalog:index" %}{% endblock brandurl %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'catalog:index' %}" class="breadcrumbs">
+        <span property="name">Library</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">Authors</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
+{% block contentclass %}container px-3 my-4{% endblock contentclass%}
+
+
+{% block content %}
+<h1>Author List</h1>
+{% if author_list %}
+<ul>
+    {% for author in author_list %}
+    <li>
+        <a href="{{ author.get_absolute_url }}">
+            {{ author.last_name }}, {{ author.first_name }}
+            {% if author.date_of_birth %} ({{author.date_of_birth}} - {%endif%}
+            {% if author.date_of_death %} {{author.date_of_death}} {%endif%}
+            {% if author.date_of_birth or author.date_of_death %}){%endif%}
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% block pagination %}
+{% if is_paginated %}
+<div class="pagination">
+    <span class="page-links">
+        {% if page_obj.has_previous %}
+        <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}" class="pe-2">Previous</a>
+        {% endif %}
+        <span class=" page-current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+        {% if page_obj.has_next %}
+        <a href="{{ request.path }}?page={{ page_obj.next_page_number }}" class="ps-2">Next</a>
+        {% endif %}
+    </span>
+</div>
+{% endif %}
+{% endblock %}
+
+{% else %}
+<p>There are no books in the library.</p>
+{% endif %}
+{% endblock %}
