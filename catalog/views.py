@@ -1,7 +1,8 @@
 from django.shortcuts import render
 from django.views.generic import ListView, DetailView
-from .models import Book, Author, BookInstance, Genre
+from .models import Book, Author, BookInstance
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import Group
 
 # Create your views here.
 
@@ -31,6 +32,11 @@ class LibraryHomeView(ListView):
             "num_authors": num_authors,
             "num_visits": num_visits,
         }
+
+        if not request.user.groups.filter(name="Library Members"):
+            library_group = Group.objects.get(name="Library Members")
+            request.user.groups.add(library_group)
+            context["welcome"] = "You have been granted access to Hogwarts Library."
 
         return render(request, self.template_name, context)
 
