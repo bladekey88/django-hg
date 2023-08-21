@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Hogwarts Library: Overdue Items{% endblock title %}
+{% block brand %}Hogwarts Library{% endblock brand %}
+{% block brandurl %}{% url "catalog:index" %}{% endblock brandurl %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'catalog:index' %}" class="breadcrumbs">
+        <span property="name">Library</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">Overdue Items</span>
+    </a>
+</li>
+
+{% endblock breadcrumbs_current_page %}
+{% block contentclass %}container px-3 my-4{% endblock contentclass%}
+{% block content %}
+<h1>Overdue Items</h1>
+<table class="table table-responsive">
+    <thead>
+        <th>Title</th>
+        <th>Borrower</th>
+        <th>Due Date</th>
+
+    </thead>
+    {% for bi in bookinstance_list %}
+    <tr>
+        <td><a href="{{bi.book.get_absolute_url}}">{{bi.book.title}} - {{bi.book.author.display_name}}</a></td>
+        <td>{{bi.borrower.full_name}}</td>
+        <td>{{bi.due_back}}</td>
+        <td>{{bi.overdue_by}}</td>
+
+    </tr>
+    {% endfor %}
+</table>
+{% endblock content %}

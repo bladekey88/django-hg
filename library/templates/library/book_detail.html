@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Hogwarts Library: {{book.title}}{% endblock title %}
+{% block brand %}Hogwarts Library{% endblock brand %}
+{% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'library:index' %}" class="breadcrumbs">
+        <span property="name">Library</span>
+    </a>
+</li>
+<li>
+    <a href="{% url 'library:books' %}" class="breadcrumbs">
+        <span property="name">Books</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">{{book.title}}</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
+{% block contentclass %}container px-3 my-4{% endblock contentclass%}
+
+{% block content %}
+<h1>Title: {{ book.title }}</h1>
+
+<div class="mb-0">
+    <strong>Author{{book.author.all.count|pluralize}}:</strong>
+    <ul class="mt-0 list-unstyled d-inline-flex gap-1">
+        {% for author in book.author.all %}
+        <li>
+            <a href="{{author.get_absolute_url}}">{{author.display_name}}{%if not forloop.last %},{%endif%}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+<!-- author detail link not yet defined -->
+<p><strong>Summary:</strong> {{ book.summary }}</p>
+{% if book.part_of_series %}
+<p><strong>Series:</strong> {{book.series.name}} - (Book {{book.position_in_series}} of
+    {{book.series.book_set.all.count}})</p>
+{%endif%}
+<p><strong>Language:</strong> {{ book.get_item_language_display }}</p>
+<p><strong>Category:</strong> {{book.genre.first.get_genre_type_display}}</p>
+<p><strong>Genre:</strong> {{ book.genre.all|join:", " }}</p>
+<p><strong>ISBN:</strong> {{ book.isbn }}</p>
+<p><strong>Publish Date:</strong> {{ book.publish_date }}</p>
+<div style="margin-left:20px;margin-top:20px">
+    <h4>Copies</h4>
+
+    {% for copy in book.bookinstance_set.all %}
+    <hr />
+    <p
+        class="{% if copy.status == 'a' %}text-success{% elif copy.status == 'm' %}text-danger{% else %}text-warning{% endif %}">
+        {{ copy.get_status_display }}
+    </p>
+    {% if copy.status != 'a' %}
+    <p><strong>Due to be returned:</strong> {{ copy.due_back }}</p>
+    {% endif %}
+    <p><strong>Imprint:</strong> {{ copy.imprint }}</p>
+    <p class="text-muted"><strong>Id:</strong> {{ copy.id }}</p>
+    {% endfor %}
+</div>
+{% endblock %}

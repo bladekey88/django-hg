@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Hogwarts Library{% endblock title %}
 {% block brand %}Hogwarts Library{% endblock brand %}
-{% block brandurl %}{% url "catalog:index" %}{% endblock brandurl %}
+{% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
+
+
 {% block breadcrumbs_current_page %}
 <li>
     <a href="{{request.url}}" class="breadcrumbs-current-page">
@@ -11,14 +13,26 @@
 {% endblock breadcrumbs_current_page %}
 {% block contentclass %}container px-3 my-4{% endblock contentclass%}
 {% block content %}
-{%if not perms.catalog.view_book %}
+
+{% if not request.user.library_user %}
 <div class="alert alert-warning border-danger border-2 rounded-1 shadow-lg align-items-center text-center">
     <h4 class="fw-bolder">
         Library Functionality is restricted until an account is created<br />
     </h4>
     <hr>
     <div class="buttons d-flex flex-center justify-content-center align-items-center gap-5">
-        <a class="btn btn-primary" href='{% url "catalog:create-account" %}'>Create Account</a>
+        <a class="btn btn-primary" href='{% url "library:create-account" %}'>Create Account</a>
+        <a class="btn btn-primary" href='{% url "school:home" %}'>Home</a>
+    </div>
+</div>
+{% elif request.user.library_user.status == "S" %}
+<div class="alert alert-warning border-danger border-4 rounded-3 shadow-lg align-items-center text-center">
+    <h3 class="fw-bolder text-danger fw-bold">
+        Your Hogwarts Library account has been suspended.<br />
+    </h3>
+    <hr>
+    <div class="buttons d-block gap-5 text-danger">
+        <h5 class="mb-3 fw-bold">Please contact a member of library staff for more information</h5>
         <a class="btn btn-primary" href='{% url "school:home" %}'>Home</a>
     </div>
 </div>
@@ -37,7 +51,7 @@
     <em>Mozilla Developer Network</em>!
 </p>
 <ul>
-    <li><a href="{% url 'catalog:my-items' %}">
+    <li><a href="#">
             <strong>My Items</strong>
         </a>
     </li>
@@ -46,15 +60,27 @@
 <p>The library has the following record counts:</p>
 <ul>
     <li>
-        <a href="{% url 'catalog:books' %}">
+        <a href="{% url 'library:books' %}">
             <strong>Books:</strong>
         </a>
         {{ num_books }}
     </li>
+    <li>
+        <a href="#">
+            <strong>Video Games:</strong>
+        </a>
+        {{ num_vg }}
+    </li>
+    <li>
+        <a href="#">
+            <strong>Series:</strong>
+        </a>
+        {{ num_series }}
+    </li>
     <li><strong>Copies:</strong> {{ num_instances }}</li>
     <li><strong>Copies available:</strong> {{ num_instances_available }}</li>
     <li>
-        <a href="{% url 'catalog:authors' %}">
+        <a href="{% url 'library:authors' %}">
             <strong>Authors:</strong>
         </a>
         {{ num_authors }}

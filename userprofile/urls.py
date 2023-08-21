@@ -23,7 +23,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("account/", include("account.urls", namespace="account")),
     path("mail/", include("mail.urls", namespace="mail")),
-    path("library/", include("catalog.urls", namespace="catalog")),
+    path("catalog/", include("catalog.urls", namespace="catalog")),
+    path("library/", include("library.urls", namespace="library")),
     path("", include("school.urls", namespace="school")),
     path("__debug__/", include("debug_toolbar.urls")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

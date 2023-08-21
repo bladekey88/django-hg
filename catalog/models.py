@@ -2,9 +2,10 @@ from django.db import models
 from django.urls import reverse
 import uuid  # Required for unique book instances
 from users.models import CustomUser
-from datetime import date, datetime
+from datetime import datetime
 from django.utils.timezone import utc
-from math import ceil, floor
+from math import ceil
+from django.core.exceptions import ValidationError
 
 
 class Genre(models.Model):
@@ -67,7 +68,7 @@ class BookInstance(models.Model):
     )
     book = models.ForeignKey("Book", on_delete=models.RESTRICT, null=True)
     imprint = models.CharField(max_length=200)
-    due_back = models.DateField(null=True, blank=True)
+    due_back = models.DateTimeField(null=True, blank=True)
     borrower = models.ForeignKey(
         CustomUser, on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -99,13 +100,24 @@ class BookInstance(models.Model):
     @property
     def is_overdue(self):
         """Determines if the book is overdue based on due date and current date."""
-        return bool(self.due_back and date.today() > self.due_back)
+        return bool(self.due_back and datetime.now(tz=utc) > self.due_back)
+
+    @property
+    def overdue_by(self):
+        if self.due_back:
+            return datetime.now(tz=utc) - self.due_back
 
     def can_be_checked_out(self):
         if self.status == "a":
             return True
         else:
             return False
+
+    def clean(self):
+        if not self.status == "o" and (self.borrower or self.due_back):
+            raise ValidationError(
+                "'Borrower' and 'Due back' can only be set when 'Status' is 'On Loan'"
+            )
 
 
 class Author(models.Model):

@@ -1,0 +1,386 @@
+from django.db import models
+from django.core.exceptions import ValidationError
+import uuid
+from users.models import CustomUser
+from django.urls import reverse
+
+# Create your models here.
+
+
+class Genre(models.Model):
+    """Model representing a book genre."""
+
+    name = models.CharField(
+        "Name",
+        max_length=200,
+        help_text="Enter a book genre (e.g. Science Fiction)",
+        unique=True,
+    )
+
+    class GenreObject(models.TextChoices):
+        BOOK = ("B", "Book")
+        VIDEOGAME = ("V", "Video Game")
+        DVD = ("D", "DVD")
+        BLURAY = ("BR", "Blu-Ray")
+
+    class GenreType(models.TextChoices):
+        FICTION = ("F", "Fiction")
+        NONFICTION = ("NF", "Non-Fiction")
+
+    genre_object = models.CharField(
+        "Object",
+        max_length=10,
+        choices=GenreObject.choices,
+        help_text="Choose the object type to which the genre applies",
+    )
+
+    genre_type = models.CharField(
+        max_length=10,
+        choices=GenreType.choices,
+        help_text="Choose Genre Type",
+        verbose_name="Type",
+        null=True,
+        blank=True,
+    )
+
+    def clean(self, *args, **kwargs):
+        if self.genre_object == self.GenreObject.BOOK and not self.genre_type:
+            raise ValidationError("A genre type must be set for Book genres.")
+        elif self.genre_object != self.GenreObject.BOOK and self.genre_type:
+            raise ValidationError("Genre type can only be set for Books")
+
+        super().clean(*args, **kwargs)
+
+    def __str__(self):
+        """String for representing the Model object."""
+        return f"{self.name}"  # type: ignore
+
+    def __repr__(self):
+        return f"{self.name}-{self.get_genre_object_display()}"  # type:ignore
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Genre"
+        verbose_name_plural = "Genres"
+
+
+class Author(models.Model):
+    """Model representing an author."""
+
+    first_name = models.CharField(
+        "First Name",
+        max_length=100,
+        null=True,
+        blank=True,
+    )
+    middle_name = models.CharField(
+        "Middle Name",
+        max_length=100,
+        null=True,
+        blank=True,
+    )
+    last_name = models.CharField("Last Name", max_length=100)
+    display_name = models.CharField(max_length=100, blank=True, null=True)
+    date_of_birth = models.DateField("Born", null=True, blank=True)
+    date_of_death = models.DateField("Died", null=True, blank=True)
+
+    class AuthorType(models.TextChoices):
+        INDIVIDUAL = ("I", "Individual")
+        GROUP = ("G", "Group")
+        COMPANY = ("C", "Company")
+
+    author_type = models.CharField(
+        "Author Type",
+        max_length=10,
+        choices=AuthorType.choices,
+        default=AuthorType.INDIVIDUAL,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ["display_name"]
+        verbose_name = "Author"
+        verbose_name_plural = "Authors"
+
+    def get_absolute_url(self):
+        """Returns the URL to access a particular author instance."""
+        return reverse("library:author-detail", args=[str(self.id)])
+
+    def save(self, *args, **kwargs):
+        if not self.display_name:
+            if self.middle_name:
+                self.display_name = (
+                    f"{self.first_name} {self.middle_name} {self.last_name}"
+                )
+            else:
+                self.display_name = f"{self.first_name} {self.last_name}"
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        """String for representing the Model object."""
+        return f"{self.display_name}"
+
+    def __repr__(self):
+        return f"{self.last_name}. {self.first_name} {self.middle_name}"
+
+
+class Series(models.Model):
+    name = models.CharField("Series Name", max_length=200, unique=True)
+    summary = models.TextField(
+        max_length=1000,
+        help_text="Enter a brief description of the item",
+    )
+    genre = models.ManyToManyField(
+        Genre,
+        help_text="Select a genre for this item",
+    )
+
+    author = models.ManyToManyField(Author)
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        help_text="Unique ID for this particular item across whole library",
+    )
+
+    publish_date = models.DateField(
+        "Published On",
+        blank=True,
+        null=True,
+    )
+
+    class Meta:
+        verbose_name = "Series"
+        verbose_name_plural = "Series"
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.name}"
+
+    def __repr__(self):
+        return f"{self.name}"
+
+
+class LibraryItem(models.Model):
+    """Abstract Model representing a generic item but not any specific copy"""
+
+    title = models.CharField(
+        "title",
+        max_length=200,
+        help_text="Enter the name/title for this item",
+    )
+    summary = models.TextField(
+        max_length=1000,
+        help_text="Enter a brief description of the item",
+    )
+    genre = models.ManyToManyField(
+        Genre,
+        help_text="Select a genre for this item",
+    )
+
+    author = models.ManyToManyField(Author)
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        help_text="Unique ID for this particular item across whole library",
+    )
+
+    publish_date = models.DateField(
+        "First Published On",
+        blank=True,
+        null=True,
+    )
+    part_of_series = models.BooleanField(
+        "Part of Series",
+        default=False,
+        blank=True,
+        null=True,
+    )
+
+    series = models.ForeignKey(
+        Series,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
+
+    position_in_series = models.IntegerField(
+        "Number in Series",
+        blank=True,
+        null=True,
+    )
+
+    class Meta:
+        ordering = ["title"]
+        verbose_name = "Library Item"
+        verbose_name_plural = "Library Items"
+        abstract = True
+
+    class ItemType(models.TextChoices):
+        BOOK = ("B", "Book")
+        DIGITAL = ("D", "Digital")
+        CD = ("CD", "Compact Disc")
+
+    item_type = models.CharField(
+        "Item Type",
+        max_length=7,
+        choices=ItemType.choices,
+        editable=False,
+    )
+
+    class Language(models.TextChoices):
+        ENGLISH = ("EN", "English")
+        JAPANESE = ("JP", "Japanese")
+
+    item_language = models.CharField(
+        "Language",
+        default="EN",
+        choices=Language.choices,
+        max_length=25,
+    )
+
+    def __str__(self):
+        return f"{self.title}"
+
+    def get_absolute_url(self):
+        """Returns the URL to access a detail record for this item."""
+        raise NotImplementedError("Must be implemented in child class")
+
+
+class Book(LibraryItem):
+    item_type = models.CharField(
+        "Type",
+        max_length=7,
+        default="B",
+        editable=False,
+    )
+
+    isbn = models.CharField(
+        "ISBN",
+        max_length=13,
+        unique=True,
+        help_text="""13 Character <a href="https://www.isbn-international.org/content/what-isbn">ISBN number</a>""",  # noqa
+    )
+
+    genre = models.ManyToManyField(
+        Genre,
+        help_text="Select a genre for this item",
+        limit_choices_to={"genre_object": "B"},
+    )
+
+    class Meta:
+        verbose_name = "Book"
+        verbose_name_plural = "Books"
+        ordering = ["series", "position_in_series", "title"]
+
+    def get_absolute_url(self):
+        """Returns the URL to access a detail record for this book."""
+        return reverse("library:book-detail", args=[str(self.id)])
+
+
+class VideoGame(LibraryItem):
+    item_type = models.CharField(
+        "Type",
+        max_length=9,
+        default="V",
+        editable=True,
+    )
+
+    genre = models.ManyToManyField(
+        Genre,
+        help_text="Select a genre for this item",
+        limit_choices_to={"genre_object": "V"},
+    )
+
+    author = models.ManyToManyField(
+        Author,
+        verbose_name="publisher",
+        limit_choices_to={"author_type": "C"},
+        related_name="publisher",
+    )
+    developer = models.ManyToManyField(
+        Author,
+        verbose_name="developer",
+        limit_choices_to={"author_type": "C"},
+        related_name="developer",
+    )
+
+    class SystemPlatform(models.TextChoices):
+        PC = ("PC", "PC")
+        NES = ("NES", "Nintendo Enetertainment System")
+        SNES = ("SNES", "Super Nintendo Entertainment System")
+        N64 = ("N64", "Nintendo 64")
+        GC = ("GC", "Nintendo Gamecube")
+        WII = ("WII", "Nintendo Wii")
+        WIIU = ("WIIU", "Wii-U")
+        SWITCH = ("SWITCH", "Nintendo Switch")
+        GB = ("GB", "Gameboy")
+        GBC = ("GBC", "Gameboy Color")
+        GBA = ("GBA", "Gameboy Advance")
+        DS = ("DS", "Nintendo DS")
+        THREEDS = ("3DS", "3DS")
+        PS1 = ("PS1", "Playstation 1")
+        PS2 = ("PS2", "Playstation 2")
+        PS3 = ("PS3", "Playstation 3")
+        PS4 = ("PS4", "Playstation 4")
+        PS5 = ("PS5", "Playstation 5")
+        XBOX = ("XBOX", "XBox")
+        X360 = ("X360", "XBox 360")
+        XONE = ("XONE", "XBox One")
+        XSXS = ("XSXSE", "XBox Series X/S")
+
+    platform = models.CharField(
+        "Platform",
+        max_length=10,
+        choices=SystemPlatform.choices,
+    )
+
+    class Meta:
+        verbose_name = "Video Game"
+        verbose_name_plural = "Video Games"
+        ordering = ["series", "position_in_series", "title"]
+
+
+class Borrower(models.Model):
+    user = models.OneToOneField(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="library_user",
+    )
+
+    class Meta:
+        verbose_name = "Borrower"
+        verbose_name_plural = "Borrowers"
+
+    class BorrowerStatus(models.TextChoices):
+        ACTIVE = ("A", "Active")
+        SUSPENDED = ("S", "Suspended")
+        PENDING = ("P", "Pending")
+        INACTIVE = (("I", "Inactive"),)
+
+    status = models.CharField(
+        "Borrower Status",
+        choices=BorrowerStatus.choices,
+        default=BorrowerStatus.PENDING,
+        max_length=17,
+    )
+
+    max_fine_amount = models.FloatField(
+        "Maximum Fine Amount",
+        blank=True,
+        null=True,
+        default=0.00,
+        help_text="This is the maximum fine a user can accrue before borrowing privileges are revoked",
+    )
+
+    borrow_limit = models.PositiveIntegerField(
+        "Maximum Number of Items",
+        blank=True,
+        null=True,
+        default=0,
+        help_text="The maximum number of items a user can borrow at any one time",
+    )
+
+    def __str__(self):
+        return f"{self.user.full_name()}"

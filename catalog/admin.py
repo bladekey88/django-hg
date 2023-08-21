@@ -5,9 +5,28 @@ from .models import Author, Genre, Book, BookInstance, Borrower, Fine, BorrowerF
 from .forms import BorrowerFineAddForm
 
 
-# Register your models here.
+# Custom Actions
+@admin.action(
+    description="Return/Make Available Selected Items",
+    permissions=["change"],
+)
+def make_items_available(modeladmin, request, queryset):
+    queryset.update(status="a")
+    queryset.update(borrower=None)
+    queryset.update(due_back=None)
 
 
+@admin.action(
+    description="Make Selected Items Unavailable",
+    permissions=["change"],
+)
+def make_items_unavailable(modeladmin, request, queryset):
+    queryset.update(status="m")
+    queryset.update(borrower=None)
+    queryset.update(due_back=None)
+
+
+# Admin Models.
 class BookInline(admin.TabularInline):
     model = Book
     extra = 0
@@ -73,6 +92,11 @@ class BookAdmin(admin.ModelAdmin):
 
 # Register the Admin classes for BookInstance using the decorator
 class BookInstanceAdmin(admin.ModelAdmin):
+    actions = [
+        make_items_available,
+        make_items_unavailable,
+    ]
+
     @admin.display(description="Available to Borrow")
     def get_borrowable(self, obj):
         return obj.can_be_checked_out()

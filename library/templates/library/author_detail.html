@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Hogwarts Library: {{author.last_name}}, {{author.first_name}}{% endblock title %}
+{% block brand %}Hogwarts Library{% endblock brand %}
+{% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
+
+{% block pagestyle %}
+<style>
+    .author-item-list {
+        border: 0.05rem solid #c3c3c3;
+        /* border-left: 0.5rem solid #ffc107; */
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, .042);
+        padding: 1rem;
+        margin: 1rem 0;
+        transition: 0.2s all ease-in-out;
+    }
+
+    .author-item-list:hover {
+        border-left: 0.5rem solid #0d6efd;
+        background-color: rgba(41, 156, 205, 0.152);
+        transition: 0.2s all ease-in-out;
+    }
+</style>
+{% endblock pagestyle %}
+
+
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'library:index' %}" class="breadcrumbs">
+        <span property="name">Library</span>
+    </a>
+</li>
+<li>
+    <a href="{% url 'library:authors' %}" class="breadcrumbs">
+        <span property="name">Authors</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">{{author}}</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
+
+{% block contentclass %}container px-3 my-4{% endblock contentclass%}
+
+{% block content %}
+<h1>Author: {{author.display_name}}</h1>
+<div>
+    <ul class="mt-3 px-3 alert alert-info border-info rounded-0 shadow-sm list-unstyled">
+        <li>
+            Type: {{author.get_author_type_display}}
+        </li>
+        <li>
+            Full Name: {{author.first_name}}{% if author.middle_name%} {{author.middle_name}}{%endif%}
+            {{author.last_name}}
+        </li>
+        <li>Nationality: British</li>
+        {% if author.date_of_birth %}
+        <li>
+            Date of Birth: {{author.date_of_birth}}
+        </li>
+
+        {% if author.date_of_death %}
+        <li>
+            Date of Death: {{author.date_of_death}}
+        </li>
+        {% endif %}
+        {% endif %}
+    </ul>
+    <hr>
+
+    <h4>Library Items</h4>
+    <dl>
+        {% if author.book_set.all %}
+        <div class="books border-top my-2 py-2 ms-5">
+            <h5>Books</h5>
+            {% for book in author.book_set.all %}
+            <div class="author-item-list">
+                <dt>
+                    <a href="{% url 'library:book-detail' book.pk %}">
+                        {{book}} ({{book.publish_date|date:"Y"}})
+                    </a>
+                </dt>
+                <dd>{{book.summary}}</dd>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif%}
+        {{author.videogame_set_all}}
+        {% if author.developer.all or author.publisher.all %}
+        <div class="video_games border-top my-2 py-2 ms-5">
+            <h5>Video Games</h5>
+            {% for vg in author.developer.all %}
+            <div class="author-item-list">
+                <dt>
+                    <a href="#">
+                        {{vg}} ({{vg.publish_date|date:"Y"}})
+                    </a>
+                    <p class="d-inline m-0 fw-light text-body-secondary"> - Developed by {{vg.developer.all|join:", "}},
+                    </p>
+                    <p class="d-inline m-0 mb-2 fw-light text-body-secondary">Published by {{vg.author.all|join:", "}}
+                    </p>
+
+                </dt>
+                <dd>{{vg.summary}}</dd>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif%}
+    </dl>
+</div>
+{% endblock %}

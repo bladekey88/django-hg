@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Hogwarts Library | Create Account{% endblock title %}
+{% block brand %}Hogwarts Library{% endblock brand %}
+{% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">Library</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
+{% block contentclass %}container px-3 my-4{% endblock contentclass%}
+{% block content %}
+{%if request.user.library_user %}
+{% if welcome %}
+<div class="alert alert-primary border-primary rounded-0 shadow-lg fw-bolder text-center">
+    <h5 class="text-center">
+        {{welcome}}
+    </h5>
+    <a class="btn btn-primary" href='{% url "library:index" %}'>Hogwarts Library Home</a>
+</div>
+{% endif %}
+{% endif %}
+
+{% endblock %}
