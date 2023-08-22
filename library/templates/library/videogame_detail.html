@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Hogwarts Library: {{videogame.title}}{% endblock title %}
+{% block brand %}Hogwarts Library{% endblock brand %}
+{% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'library:index' %}" class="breadcrumbs">
+        <span property="name">Library</span>
+    </a>
+</li>
+<li>
+    <a href="{% url 'library:videogames' %}" class="breadcrumbs">
+        <span property="name">Video Games</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">{{videogame.title}}</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
+{% block contentclass %}container px-3 my-4{% endblock contentclass%}
+
+{% block content %}
+<h1>Title: {{ videogame.title }}</h1>
+<p><strong>Summary:</strong> {{ videogame.summary }}</p>
+<div class="mb-0">
+    <strong>Developer{{videogame.developer.all.count|pluralize}}:</strong>
+    <ul class="mt-0 list-unstyled d-inline-flex gap-1">
+        {% for developer in videogame.developer.all %}
+        <li>
+            <a href="{{developer.get_absolute_url}}">{{developer.display_name}}{%if not forloop.last %},{%endif%}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+<div class="mb-0">
+    <strong>Publisher{{videogame.author.all.count|pluralize}}:</strong>
+    <ul class="mt-0 list-unstyled d-inline-flex gap-1">
+        {% for publisher in videogame.author.all %}
+        <li>
+            <a href="{{publisher.get_absolute_url}}">{{publisher.display_name}}{%if not forloop.last %},{%endif%}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% if videogame.part_of_series %}
+<p><strong>Series:</strong> {{videogame.series.name}} - (Game {{videogame.position_in_series}} of
+    {{videogame.series.videogame_set.all.count}})</p>
+{%endif%}
+<p><strong>Language:</strong> {{ videogame.item_language.all|join:", " }}</p>
+<p><strong>Genre:</strong> {{ videogame.genre.all|join:", " }}</p>
+<p><strong>Platform:</strong> {{ videogame.platform}}</p>
+<p><strong>Publish Date:</strong> {{ videogame.publish_date }}</p>
+<div style="margin-left:20px;margin-top:20px">
+    <h4>Copies</h4>
+
+    {% for copy in book.bookinstance_set.all %}
+    <hr />
+    <p
+        class="{% if copy.status == 'a' %}text-success{% elif copy.status == 'm' %}text-danger{% else %}text-warning{% endif %}">
+        {{ copy.get_status_display }}
+    </p>
+    {% if copy.status != 'a' %}
+    <p><strong>Due to be returned:</strong> {{ copy.due_back }}</p>
+    {% endif %}
+    <p><strong>Imprint:</strong> {{ copy.imprint }}</p>
+    <p class="text-muted"><strong>Id:</strong> {{ copy.id }}</p>
+    {% endfor %}
+</div>
+{% endblock %}

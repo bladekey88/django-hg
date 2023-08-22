@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Hogwarts Library: Books{% endblock title %}
+{% block title %}Hogwarts Library: Video Games{% endblock title %}
 {% block brand %}Hogwarts Library{% endblock brand %}
 {% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
 {% block breadcrumbs_current_page %}
@@ -10,7 +10,7 @@
 </li>
 <li>
     <a href="{{request.url}}" class="breadcrumbs-current-page">
-        <span class="text-secondary" property="name">Books</span>
+        <span class="text-secondary" property="name">Video Games</span>
     </a>
 </li>
 {% endblock breadcrumbs_current_page %}
@@ -18,13 +18,13 @@
 
 
 {% block content %}
-<h1>List of Books</h1>
-{% if book_list %}
+<h1>List of Video Games</h1>
+{% if videogame_list %}
 <ul>
-    {% for book in book_list %}
+    {% for vg in videogame_list %}
     <li>
-        <a href="{{ book.get_absolute_url }}">{{ book.title }}</a>
-        - ({{book.author.all|join:", "}})
+        <a href="{{ vg.get_absolute_url }}">{{ vg.title }}</a>
+        - ({{vg.get_platform_display}}, {{vg.developer.all|join:", "}})
 
     </li>
     {% endfor %}
@@ -48,6 +48,6 @@
 {% endblock %}
 
 {% else %}
-<p>There are no books in the library.</p>
+<p>There are no video games in the library.</p>
 {% endif %}
 {% endblock %}

@@ -32,7 +32,7 @@ class LibraryHomeView(ListView):
             "num_vg": num_vg,
             "num_series": num_series,
             "num_instances": 0,  # set to 0 until instances implemented
-            "num_instances_available": 0,  # set to 0 until instances implemented
+            "num_instances_available": 0,  # set to 0 until instances
             "num_authors": num_authors,
             "num_visits": num_visits,
         }
@@ -55,7 +55,7 @@ class LibraryCreateAccount(LoginRequiredMixin, TemplateView):
                 request.user.groups.add(library_group)
 
                 context = {
-                    "welcome": "You have been granted access to Hogwarts Library."
+                    "welcome": "Access granted to Hogwarts Library.",
                 }
 
                 return render(request, self.template_name, context)
@@ -71,7 +71,7 @@ class NoPermissionMixin:
             ):  # library_user is related name from new library model
                 return self.handle_no_permission()
 
-        return super().get(request, *args, **kwargs)
+        return super().get(request, *args, **kwargs)  # type: ignore
 
     def handle_no_permission(self):
         return redirect("library:index", permanent=False)
@@ -80,7 +80,7 @@ class NoPermissionMixin:
 class BookListView(NoPermissionMixin, PermissionRequiredMixin, ListView):
     permission_required = ["library.view_book"]
     model = Book
-    paginate_by = 10
+    paginate_by = 100
 
 
 class BookDetailView(NoPermissionMixin, PermissionRequiredMixin, DetailView):
@@ -88,12 +88,34 @@ class BookDetailView(NoPermissionMixin, PermissionRequiredMixin, DetailView):
     permission_required = ["library.view_book"]
 
 
+class VGListView(NoPermissionMixin, PermissionRequiredMixin, ListView):
+    permission_required = ["library.view_videogame"]
+    model = VideoGame
+    paginate_by = 100
+
+
+class VGDetailView(NoPermissionMixin, PermissionRequiredMixin, DetailView):
+    model = VideoGame
+    permission_required = ["library.view_videogame"]
+
+
 class AuthorListView(NoPermissionMixin, PermissionRequiredMixin, ListView):
     model = Author
-    paginate_by = 50
+    paginate_by = 100
     permission_required = ["library.view_author"]
 
 
 class AuthorDetailView(NoPermissionMixin, PermissionRequiredMixin, DetailView):
     model = Author
     permission_required = ["library.view_author"]
+
+
+class SeriesListView(NoPermissionMixin, PermissionRequiredMixin, ListView):
+    model = Series
+    paginate_by = 100
+    permission_required = ["library.view_series"]
+
+
+class SeriesDetailView(NoPermissionMixin, PermissionRequiredMixin, DetailView):
+    model = Series
+    permission_required = ["library.view_series"]

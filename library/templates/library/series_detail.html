@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Hogwarts Library: {{series.title}}{% endblock title %}
+{% block brand %}Hogwarts Library{% endblock brand %}
+{% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
+{% block pagestyle %}
+<style>
+    .series-item-list {
+        border: 0.05rem solid #c3c3c3;
+        /* border-left: 0.5rem solid #ffc107; */
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, .042);
+        padding: 1rem;
+        margin: 1rem 0;
+        transition: 0.2s all ease-in-out;
+    }
+
+    .series-item-list:hover {
+        border-left: 0.5rem solid #fdb90d;
+        background-color: rgba(248, 214, 46, 0.152);
+        transition: 0.2s all ease-in-out;
+    }
+</style>
+{% endblock pagestyle %}
+
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'library:index' %}" class="breadcrumbs">
+        <span property="name">Library</span>
+    </a>
+</li>
+<li>
+    <a href="{% url 'library:series' %}" class="breadcrumbs">
+        <span property="name">Series</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">{{series.title}}</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
+{% block contentclass %}container px-3 my-4{% endblock contentclass%}
+
+{% block content %}
+<h1>Title: {{ series.title }}</h1>
+<p><strong>Summary:</strong> {{ series.summary }}</p>
+<div class="mb-0">
+    <strong>Author{{series.author.all.count|pluralize}}:</strong>
+    <ul class="mt-0 list-unstyled d-inline-flex gap-1">
+        {% for author in series.author.all %}
+        <li>
+            <a href="{{author.get_absolute_url}}">{{author.display_name}}{%if not forloop.last %},{%endif%}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+<p><strong>Number of items in Series:</strong> {{series.number_items_in_series}}</p>
+<p><strong>Language:</strong> English{{ series.item_language.all|join:", " }}</p>
+<p><strong>Genre:</strong> {{ series.genre.all|join:", " }}</p>
+<p><strong>Publish Date:</strong> {{ series.publish_date }}</p>
+<p><strong>Permalink:</strong> <a href="{{ request.build_absolute_uri }}">{{ request.build_absolute_uri }}</a></p>
+
+<h4>Items in Series</h4>
+<dl>
+    {% if series.book_set.all %}
+    <div class="books border-top my-2 py-2 ms-5">
+        <h5>Books</h5>
+        {% for book in series.book_set.all %}
+        <div class="series-item-list">
+            <dt>
+                <a href="{{ book.get_absolute_url}}">
+                    {{book}} ({{book.publish_date|date:"Y"}})
+                </a>
+                <span class="mb-0"> - {{book.author.all|join:", "}}</span>
+            </dt>
+            <dd>{{book.summary}}</dd>
+            <dd>
+                <small class="text-secondary">Genre: {{ book.genre.all|join:", " }}</small>
+            </dd>
+            <dd>
+                <small class="text-secondary">Book <span class="fw-bolder">{{book.position_in_series}}</span> of <span
+                        class="fw-bolder">{{series.book_set.all.count}}</span>
+                </small>
+            </dd>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif%}
+
+    {% if series.videogame_set.all %}
+    <div class="video_games border-top my-2 py-2 ms-5">
+        <h5>Video Games</h5>
+        {% for vg in series.videogame_set.all %}
+        <div class="series-item-list">
+            <dt>
+                <a href="{{vg.get_absolute_url}}">
+                    {{vg}} ({{vg.publish_date|date:"Y"}})
+                </a>
+                <p class="d-inline m-0 fw-light text-body-secondary"> - Developed by {{vg.developer.all|join:", "}},
+                </p>
+                <p class="d-inline m-0 mb-2 fw-light text-body-secondary">Published by {{vg.author.all|join:", "}}
+                </p>
+
+            </dt>
+            <dd>{{vg.summary}}</dd>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif%}
+</dl>
+{% endblock %}

@@ -37,10 +37,13 @@
 <!-- author detail link not yet defined -->
 <p><strong>Summary:</strong> {{ book.summary }}</p>
 {% if book.part_of_series %}
-<p><strong>Series:</strong> {{book.series.name}} - (Book {{book.position_in_series}} of
-    {{book.series.book_set.all.count}})</p>
+<p><strong>Series:</strong>
+    <a href="{{book.series.get_absolute_url}}">{{book.series.title}} (Book
+        {{book.position_in_series}} of
+        {{book.series.book_set.all.count}})</a>
+</p>
 {%endif%}
-<p><strong>Language:</strong> {{ book.get_item_language_display }}</p>
+<p><strong>Language:</strong> {{ book.item_language.all|join:", " }}</p>
 <p><strong>Category:</strong> {{book.genre.first.get_genre_type_display}}</p>
 <p><strong>Genre:</strong> {{ book.genre.all|join:", " }}</p>
 <p><strong>ISBN:</strong> {{ book.isbn }}</p>

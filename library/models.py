@@ -4,7 +4,55 @@ import uuid
 from users.models import CustomUser
 from django.urls import reverse
 
+
 # Create your models here.
+class Language(models.Model):
+    """
+    List of languages by iso code (2 letter only because country code
+    is not needed.
+    This should be popluated by getting data from django.conf.locale.LANG_INFO
+    """
+
+    name = models.CharField(
+        max_length=256,
+        null=False,
+        blank=False,
+        verbose_name="Language name",
+    )
+    name_local = models.CharField(
+        max_length=256,
+        null=False,
+        blank=True,
+        default="",
+        verbose_name="Language name (in that language)",
+    )
+    isocode = models.CharField(
+        max_length=2,
+        null=False,
+        blank=False,
+        unique=True,
+        verbose_name="ISO 639-1 Language code",
+        help_text="2 character language code without country",
+    )
+    sorting = models.PositiveIntegerField(
+        blank=False,
+        null=False,
+        default=0,
+        verbose_name="Sort Order",
+        help_text="Increase to show at top of the list",
+    )
+
+    def __str__(self):
+        return f"{self.name} ({self.isocode})"
+
+    class Meta:
+        verbose_name = "language"
+        verbose_name_plural = "languages"
+        ordering = (
+            "-sorting",
+            "name",
+            "isocode",
+        )
 
 
 class Genre(models.Model):
@@ -104,7 +152,7 @@ class Author(models.Model):
 
     def get_absolute_url(self):
         """Returns the URL to access a particular author instance."""
-        return reverse("library:author-detail", args=[str(self.id)])
+        return reverse("library:author-detail", args=[str(self.id)])  # type: ignore # noqa
 
     def save(self, *args, **kwargs):
         if not self.display_name:
@@ -114,7 +162,7 @@ class Author(models.Model):
                 )
             else:
                 self.display_name = f"{self.first_name} {self.last_name}"
-        self.clean()
+        self.clean()  # type: ignore
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -126,7 +174,7 @@ class Author(models.Model):
 
 
 class Series(models.Model):
-    name = models.CharField("Series Name", max_length=200, unique=True)
+    title = models.CharField("Series Name", max_length=200, unique=True)
     summary = models.TextField(
         max_length=1000,
         help_text="Enter a brief description of the item",
@@ -152,13 +200,20 @@ class Series(models.Model):
     class Meta:
         verbose_name = "Series"
         verbose_name_plural = "Series"
-        ordering = ["name"]
+        ordering = ["title"]
+
+    def number_items_in_series(self):
+        return self.book_set.all().count() + self.videogame_set.all().count()
 
     def __str__(self):
-        return f"{self.name}"
+        return f"{self.title}"
 
     def __repr__(self):
-        return f"{self.name}"
+        return f"{self.title}"
+
+    def get_absolute_url(self):
+        """Returns the URL to access a particular series instance."""
+        return reverse("library:series-detail", args=[str(self.id)])  # type: ignore # noqa
 
 
 class LibraryItem(models.Model):
@@ -229,15 +284,9 @@ class LibraryItem(models.Model):
         editable=False,
     )
 
-    class Language(models.TextChoices):
-        ENGLISH = ("EN", "English")
-        JAPANESE = ("JP", "Japanese")
-
-    item_language = models.CharField(
+    item_language = models.ManyToManyField(
+        Language,
         "Language",
-        default="EN",
-        choices=Language.choices,
-        max_length=25,
     )
 
     def __str__(self):
@@ -245,7 +294,9 @@ class LibraryItem(models.Model):
 
     def get_absolute_url(self):
         """Returns the URL to access a detail record for this item."""
-        raise NotImplementedError("Must be implemented in child class")
+        raise NotImplementedError(
+            f"'get_absolute_url' method must be implemented in '{self._meta}'"
+        )
 
 
 class Book(LibraryItem):
@@ -267,6 +318,12 @@ class Book(LibraryItem):
         Genre,
         help_text="Select a genre for this item",
         limit_choices_to={"genre_object": "B"},
+    )
+
+    item_language = models.ManyToManyField(
+        Language,
+        related_name="book_language",
+        default="English",
     )
 
     class Meta:
@@ -336,6 +393,16 @@ class VideoGame(LibraryItem):
         choices=SystemPlatform.choices,
     )
 
+    item_language = models.ManyToManyField(
+        Language,
+        related_name="videogame_language",
+        default="English",
+    )
+
+    def get_absolute_url(self):
+        """Returns the URL to access a detail record for this videogame."""
+        return reverse("library:videogame-detail", args=[str(self.id)])
+
     class Meta:
         verbose_name = "Video Game"
         verbose_name_plural = "Video Games"
@@ -371,7 +438,7 @@ class Borrower(models.Model):
         blank=True,
         null=True,
         default=0.00,
-        help_text="This is the maximum fine a user can accrue before borrowing privileges are revoked",
+        help_text="Maximum fine before revoking borrowing privileges",
     )
 
     borrow_limit = models.PositiveIntegerField(
@@ -379,7 +446,7 @@ class Borrower(models.Model):
         blank=True,
         null=True,
         default=0,
-        help_text="The maximum number of items a user can borrow at any one time",
+        help_text="Maximum number of items a user can borrow at any one time",
     )
 
     def __str__(self):

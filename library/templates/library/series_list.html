@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Hogwarts Library: Books{% endblock title %}
+{% block title %}Hogwarts Library: Series{% endblock title %}
 {% block brand %}Hogwarts Library{% endblock brand %}
 {% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
 {% block breadcrumbs_current_page %}
@@ -10,7 +10,7 @@
 </li>
 <li>
     <a href="{{request.url}}" class="breadcrumbs-current-page">
-        <span class="text-secondary" property="name">Books</span>
+        <span class="text-secondary" property="name">Series</span>
     </a>
 </li>
 {% endblock breadcrumbs_current_page %}
@@ -18,20 +18,21 @@
 
 
 {% block content %}
-<h1>List of Books</h1>
-{% if book_list %}
+<h1>List of Series</h1>
+{% if series_list %}
 <ul>
-    {% for book in book_list %}
+    {% for series in series_list %}
     <li>
-        <a href="{{ book.get_absolute_url }}">{{ book.title }}</a>
-        - ({{book.author.all|join:", "}})
+        <a href="{{series.get_absolute_url}}">{{ series.title }}</a>
+        - ({{series.author.all|join:", "}})
+
 
     </li>
     {% endfor %}
 </ul>
 {% block pagination %}
 {% if is_paginated %}
-<div class="pagination">
+<div class=" pagination">
     <span class="page-links">
         {% if page_obj.has_previous %}
         <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}" class="pe-2">Previous</a>
@@ -48,6 +49,6 @@
 {% endblock %}
 
 {% else %}
-<p>There are no books in the library.</p>
+<p>There are no series in the library.</p>
 {% endif %}
 {% endblock %}

@@ -19,6 +19,21 @@
         background-color: rgba(41, 156, 205, 0.152);
         transition: 0.2s all ease-in-out;
     }
+
+    .series-item-list {
+        border: 0.05rem solid #c3c3c3;
+        /* border-left: 0.5rem solid #ffc107; */
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, .042);
+        padding: 1rem;
+        margin: 1rem 0;
+        transition: 0.2s all ease-in-out;
+    }
+
+    .series-item-list:hover {
+        border-left: 0.5rem solid #fdb90d;
+        background-color: rgba(248, 214, 46, 0.152);
+        transition: 0.2s all ease-in-out;
+    }
 </style>
 {% endblock pagestyle %}
 
@@ -48,13 +63,13 @@
 <div>
     <ul class="mt-3 px-3 alert alert-info border-info rounded-0 shadow-sm list-unstyled">
         <li>
-            Type: {{author.get_author_type_display}}
-        </li>
-        <li>
-            Full Name: {{author.first_name}}{% if author.middle_name%} {{author.middle_name}}{%endif%}
+            Full Name: {% if author.first_name%}{{author.first_name}}{%endif%}{% if author.middle_name%}
+            {{author.middle_name}}{%endif%}
             {{author.last_name}}
         </li>
-        <li>Nationality: British</li>
+        <li>
+            Type: {{author.get_author_type_display}}
+        </li>
         {% if author.date_of_birth %}
         <li>
             Date of Birth: {{author.date_of_birth}}
@@ -71,17 +86,49 @@
 
     <h4>Library Items</h4>
     <dl>
+        {% if author.series_set.all %}
+        <div class="books border-top my-2 py-2 ms-5">
+            <h5>Series</h5>
+            {% for series in author.series_set.all %}
+            <div class="author-item-list">
+                <dt>
+                    <a href="{{ series.get_absolute_url}}">
+                        {{series}} ({{series.publish_date|date:"Y"}})
+                    </a>
+                </dt>
+                <dd>{{series.summary}}</dd>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% if author.book_set.all %}
         <div class="books border-top my-2 py-2 ms-5">
             <h5>Books</h5>
             {% for book in author.book_set.all %}
-            <div class="author-item-list">
+            <div class="series-item-list">
                 <dt>
-                    <a href="{% url 'library:book-detail' book.pk %}">
+                    <a href="{{ book.get_absolute_url}}">
                         {{book}} ({{book.publish_date|date:"Y"}})
                     </a>
+                    {% if book.author.all|length > 1 %}
+                    <p class="fw-light text-body-secondary p-0 m-0 mb-2">
+                        {{book.author.all|join:", " }}
+                    </p>
+                    {%endif%}
                 </dt>
                 <dd>{{book.summary}}</dd>
+                <dd>
+                    <small class="text-secondary">Genre: {{ book.genre.all|join:", " }}</small>
+                </dd>
+                {% if book.series %}
+                <dd>
+                    <small class="text-secondary">
+                        Series: {{book.series}}
+                        (Book <span class="fw-bolder">{{book.position_in_series}}</span> of
+                        <span class="fw-bolder">{{book.series.book_set.all.count}}</span>)
+                    </small>
+                </dd>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -93,7 +140,7 @@
             {% for vg in author.developer.all %}
             <div class="author-item-list">
                 <dt>
-                    <a href="#">
+                    <a href="{{vg.get_absolute_url}}">
                         {{vg}} ({{vg.publish_date|date:"Y"}})
                     </a>
                     <p class="d-inline m-0 fw-light text-body-secondary"> - Developed by {{vg.developer.all|join:", "}},

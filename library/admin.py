@@ -1,5 +1,7 @@
+from typing import Optional
 from django.contrib import admin
-from .models import Author, Genre, Series, Book, VideoGame, Borrower
+from django.http.request import HttpRequest
+from .models import Author, Genre, Series, Book, VideoGame, Borrower, Language
 from django.contrib.auth.models import Permission
 
 
@@ -15,7 +17,7 @@ admin.site.register(Permission, PermissionAdmin)
 
 class BookAdmin(admin.ModelAdmin):
     model = Book
-    filter_horizontal = ["author", "genre"]
+    filter_horizontal = ["author", "genre", "item_language"]
 
     @admin.display(description="Author(s)")
     def display_author(self, obj):
@@ -25,8 +27,11 @@ class BookAdmin(admin.ModelAdmin):
 
     @admin.display(description="Genre(s)")
     def display_genre(self, obj):
-        # raise Exception()
         return ", ".join(genre.name for genre in obj.genre.all().order_by("name")[:3])
+
+    @admin.display(description="Language")
+    def display_language(self, obj):
+        return ", ".join(lang.name for lang in obj.item_language.all())
 
     list_display = [
         "title",
@@ -34,7 +39,7 @@ class BookAdmin(admin.ModelAdmin):
         "display_author",
         "display_genre",
         "series",
-        "item_language",
+        "display_language",
     ]
 
 
@@ -42,30 +47,29 @@ class BookInline(admin.TabularInline):
     model = Book
     extra = 0
     can_delete = False
-    readonly_fields = [
-        "title",
-        "genre",
-        "author",
-        "publish_date",
-        "part_of_series",
-        "series",
-        "position_in_series",
-        "id",
-        "item_language",
-        "isbn",
-    ]
     max_num = 0
     exclude = ["summary"]
     ordering = ["position_in_series", "title"]
 
+    def has_add_permission(self, request, obj):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
 
 class VideoGameAdmin(admin.ModelAdmin):
     model = VideoGame
+
+    @admin.display(description="Language(s)")
+    def display_language(self, obj):
+        return ", ".join(lang.name for lang in obj.item_language.all())
+
     list_display = [
         "title",
         "platform",
         "series",
-        "item_language",
+        "display_language",
         "publish_date",
     ]
 
@@ -86,6 +90,7 @@ class VideoGameAdmin(admin.ModelAdmin):
         "genre",
         "author",
         "developer",
+        "item_language",
     )
 
 
@@ -105,7 +110,7 @@ class SeriesAdmin(admin.ModelAdmin):
         return ", ".join(genre.name for genre in obj.genre.all().order_by("name")[:3])
 
     list_display = [
-        "name",
+        "title",
         "publish_date",
         "display_author",
         "display_genre",
@@ -116,9 +121,7 @@ class SeriesAdmin(admin.ModelAdmin):
         "author__display_name",
     ]
 
-    search_fields = [
-        "name",
-    ]
+    search_fields = ["title"]
 
 
 class GenreAdmin(admin.ModelAdmin):
@@ -197,9 +200,29 @@ class BorrowerAdmin(admin.ModelAdmin):
     ]
 
 
-admin.site.register(Borrower, BorrowerAdmin)
+class LanguageAdmin(admin.ModelAdmin):
+    model = Language
+    list_display = [
+        "name",
+        "name_local",
+        "isocode",
+        "sorting",
+    ]
+    search_fields = [
+        "name",
+        "name_local",
+    ]
+    ordering = [
+        "-sorting",
+        "name",
+        "isocode",
+    ]
+
+
 admin.site.register(Author, AuthorAdmin)
-admin.site.register(Genre, GenreAdmin)
-admin.site.register(Series, SeriesAdmin)
 admin.site.register(Book, BookAdmin)
+admin.site.register(Borrower, BorrowerAdmin)
+admin.site.register(Genre, GenreAdmin)
+admin.site.register(Language, LanguageAdmin)
+admin.site.register(Series, SeriesAdmin)
 admin.site.register(VideoGame, VideoGameAdmin)
