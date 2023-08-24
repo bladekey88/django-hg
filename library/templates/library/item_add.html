@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Hogwarts Library: Add Item{% endblock title %}
+{% block brand %}Hogwarts Library{% endblock brand %}
+{% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
+{% block pagestyle %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
+
+    * {
+
+        box-sizing: border-box;
+        font-family: Raleway;
+        padding: 0;
+        margin: 0;
+    }
+
+    .add-form {
+        background-color: #fefefe;
+        min-width: 50%;
+
+    }
+
+    .add-form input,
+    .add-form select,
+    .add-form textarea {
+        border: 1px solid #969696;
+    }
+
+    form>div {
+        margin: 0.75rem 0;
+    }
+
+    input[type="submit"] {
+        background-color: rgb(52, 52, 146);
+        color: white;
+        border: 3px blue solid;
+        border-radius: 5px;
+        margin: 2rem 0;
+    }
+
+    input,
+    select,
+    textarea {
+        font: 1.25rem / 1.5 sans-serif;
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .errorlist li::before {
+        content: "Error: ";
+    }
+
+    .errorlist li {
+        color: darkred;
+        font-weight: bolder;
+    }
+
+    .asteriskField {
+        color: darkred;
+        font-size: 1.25rem;
+    }
+</style>
+{% endblock pagestyle %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'library:index' %}" class="breadcrumbs">
+        <span property="name">Library</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">Add Book</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
+{% block contentclass %}container px-3 my-4{% endblock contentclass%}
+
+
+{% block content %}
+<div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
+    <h3>Add Item</h3>
+
+</div>
+<div class="add-form">
+    <form action="" method="post">
+        {% csrf_token %}
+        {{form|crispy}}
+        <input type="submit" value="Submit">
+    </form>
+</div>
+{% endblock content %}

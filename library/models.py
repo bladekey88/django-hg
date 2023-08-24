@@ -276,6 +276,7 @@ class LibraryItem(models.Model):
         BOOK = ("B", "Book")
         DIGITAL = ("D", "Digital")
         CD = ("CD", "Compact Disc")
+        VIDEOGAME = ("V", "Video Game")
 
     item_type = models.CharField(
         "Item Type",
@@ -339,9 +340,9 @@ class Book(LibraryItem):
 class VideoGame(LibraryItem):
     item_type = models.CharField(
         "Type",
-        max_length=9,
+        max_length=15,
         default="V",
-        editable=True,
+        editable=False,
     )
 
     genre = models.ManyToManyField(

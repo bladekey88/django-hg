@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+{% block title %}Hogwarts Library: Books{% endblock title %}
+{% block brand %}Hogwarts Library{% endblock brand %}
+{% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
+
+{% block pagestyle %}
+<style>
+    .library-item-header {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        align-items: center;
+    }
+
+    .item-container {
+        display: flex;
+        flex-wrap: wrap;
+        border-top: 1px solid #e6e7e8;
+        padding-top: 1rem;
+    }
+
+    .item-filter {
+        flex-grow: 0;
+        flex-shrink: 0;
+        flex-basis: 100%;
+        max-width: 100%;
+        padding-right: 1rem;
+        padding-left: 1rem;
+        width: 100%;
+    }
+
+    .item-content {
+        border-left: 1px solid #e6e7e8;
+        flex-basis: 0;
+        flex-grow: 1;
+        max-width: 100%;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .item-content .summary {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .summary-count {
+        flex-grow: 0;
+        flex-shrink: 0;
+        flex-basis: 100%;
+        max-width: 100%;
+    }
+
+    .summary-page {
+        flex-basis: 0;
+        flex-grow: 1;
+        max-width: 100%;
+    }
+
+    .summary-buttons {
+        flex-basis: 0;
+        flex-grow: 1;
+        max-width: 100%;
+    }
+
+    .next-arrow::after {
+        content: '\203A';
+        margin-left: 0.3rem;
+        font-size: 1rem;
+        text-decoration: none;
+        font-weight: 900
+    }
+
+    .previous-arrow::before {
+        content: '\2039';
+        margin-right: 0.3rem;
+        font-size: 1rem;
+        font-weight: 900;
+        text-decoration: none;
+    }
+
+    .link-disabled {
+        color: #bbbdbf
+    }
+
+    .record-card {
+        margin-top: 1rem;
+        border: solid 1px #e6e7e8;
+        border-radius: .25rem;
+        box-shadow: 0.25rem 0.25rem 0.5rem #e6e7e8;
+        position: relative;
+        display: block;
+        min-width: 0;
+        word-wrap: break-word;
+        background-clip: border-box;
+        background-color: #fff;
+    }
+
+    .record-card-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-left: 0;
+        margin-right: 0;
+        height: 100%;
+    }
+
+    .record-card-row>.record-image {
+        padding-left: 0;
+        padding-right: 0;
+        max-width: 200px;
+        flex-basis: 0;
+        flex-grow: 1;
+    }
+
+    .record-image>.image {
+        margin-top: 0rem;
+    }
+
+    .record-image>.image-header {
+        background-color: royalblue;
+        color: white;
+        padding: .5rem .25rem .25rem 0.25rem;
+        font-size: 0.875rem;
+        text-align: center;
+        align-items: middle;
+    }
+
+    .image .image-source {
+        position: relative;
+        opacity: 0;
+        transform: scale(0);
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 100%;
+        height: auto;
+        display: block;
+        border-style: none;
+    }
+
+    .image .image-loaded {
+        opacity: 1 !important;
+        transform: scale(1) !important;
+        transition: opacity 150ms, transform 200ms ease-out;
+        min-width: 0;
+    }
+
+    .record-card-details {
+        padding-left: 0;
+        padding-right: 0;
+        max-width: 100%;
+        flex-basis: 0;
+        flex-grow: 1;
+    }
+
+    .record-card-details .detail-header {
+        display: flex;
+        padding-top: 0.5rem
+    }
+
+    .detail-header-message {
+        margin-bottom: 0.25rem;
+        padding-left: 1.25rem;
+        align-items: center;
+        flex-grow: 1;
+        display: flex;
+    }
+
+    .detail-header-buttons {
+        margin-bottom: 0.25rem;
+        margin-right: 1rem;
+        justify-content: flex-end;
+        display: flex;
+    }
+
+    .detail-header-buttons>* {
+        margin: 0 0.25rem;
+        cursor: pointer;
+        opacity: 1;
+        scale: 1.0;
+        transition: all 200ms ease-out;
+    }
+
+    .detail-header-buttons>.bi:hover {
+        color: darkblue;
+        opacity: 1;
+        transition: all 200ms ease-out;
+        scale: 1.25;
+    }
+
+    .detail-body {
+        padding: 0 1rem 1rem 1.25rem;
+        overflow: hidden;
+    }
+
+    .detail-body-main {
+        display: flex;
+        flex: wrap;
+        margin-left: -1rem;
+        margin-right: -1rem;
+        margin-top: 1rem;
+    }
+
+    .detail-body-main .details {
+        flex-basis: 0;
+        flex-grow: 1;
+        max-width: 100%;
+        padding-left: 1rem;
+        padding-right: 1rem;
+
+    }
+
+    .details>h2 {
+        margin-bottom: 0;
+    }
+
+    .details>.supplementary-info>span {
+        display: block;
+    }
+
+    .item-summary {
+        margin-top: 1rem;
+        font-size: .875rem;
+        display: none;
+    }
+
+    .record-options {
+        display: none;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        width: 100%;
+    }
+
+    .record-options a.btn {
+        border-radius: 0;
+    }
+
+    .detail-body-available {
+        margin-top: 0.5rem;
+    }
+
+    .detail-body-available-container {
+        display: flex;
+        flex-wrap: wrap;
+        margin-right: -1rem;
+        margin-left: -1rem;
+        align-items: center;
+    }
+
+    .availability-link {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .availability-link>a {
+        color: rgba(34, 34, 34, 1);
+        text-decoration: none;
+        font-weight: 600;
+        width: 100%;
+        padding-right: 0.25rem;
+        padding-left: 1rem;
+    }
+
+    .availability-link:after {
+        content: '\203A';
+        font-size: 1.25rem;
+    }
+
+    .availability-amounts {
+        flex: 0 0 100%;
+        max-width: 100%;
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    @media (min-width: 576px) {
+        .availability-link {
+            flex-basis: 0;
+            flex-grow: 1;
+            max-width: 100%;
+        }
+
+        .availability-amounts {
+            flex: 0 0 auto;
+            width: auto;
+            max-width: 100%;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .item-filter {
+            flex-grow: 0;
+            flex-shrink: 0;
+            flex-basis: 10%;
+            max-width: 10%;
+        }
+
+        .summary-count {
+            flex-basis: 0;
+            flex-grow: 1;
+            max-width: 100%;
+        }
+
+        .summary-page {
+            flex-basis: 0;
+            flex-grow: 1;
+            max-width: 100%;
+        }
+
+        .summary-buttons {
+            flex-basis: 0;
+            flex-grow: 1;
+            max-width: 100%;
+        }
+
+        .item-content .records {
+            padding-top: 0rem;
+        }
+
+        .item-summary {
+            display: block;
+        }
+    }
+
+    @media (min-width: 992px) {
+        .item-content {
+            padding-left: 3rem;
+        }
+
+        .record-options {
+            flex: 0 0 25%;
+            max-width: 25%;
+            display: grid;
+            align-content: start;
+            gap: 0.5rem;
+        }
+    }
+</style>
+{% endblock pagestyle %}
+
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'library:index' %}" class="breadcrumbs">
+        <span property="name">Library</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">{{object_list.first.get_item_type_display}}s</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
+{% block contentclass %}container px-3 my-4{% endblock contentclass%}
+
+{% block content %}
+<div class="library-item-header">
+    <h3 class="fw-bolder">{{object_list.first.get_item_type_display}} List</h3>
+    {% if perms.library.add_book %}
+    <a class="btn btn-outline-info rounded-0" href="{{request.url}}add">Add
+        {{object_list.first.get_item_type_display}}
+    </a>
+    {% endif %}
+</div>
+<div class="item-container ">
+    <div class="item-filter">FILTER</div>
+    <div class="item-content">
+        <div class="summary">
+            <div class="summary-count">
+                Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+                result{{page_obj.paginator.count|pluralize}}
+            </div>
+            <div class="summary-page">
+                <div class="pagination">
+                    {% if is_paginated %}
+                    <span class="page-links">
+                        {% if page_obj.has_previous %}
+                        <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}"
+                            class="pe-2 previous-arrow">Previous</a>
+                        {% else %}
+                        <span class=" link-disabled pe-2 previous-arrow">Previous</span>
+                        {% endif %}
+                        <span class="page-current">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                        {% if page_obj.has_next %}
+                        <a href="{{ request.path }}?page={{ page_obj.next_page_number }}"
+                            class="ps-2 next-arrow">Next</a>
+                        {% else %}
+                        <span class="link-disabled ps-2 next-arrow ">Next</span>
+                        {% endif %}
+                    </span>
+                    {% else %}
+                    <span class=" link-disabled pe-2 previous-arrow">Previous</span>
+                    <span class="link-disabled ">Page 1 of 1</span>
+                    <span class="link-disabled ps-2 next-arrow ">Next</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="summary-button">List View</div>
+        </div>
+        {% for object in object_list %}
+        <div class="records">
+            <div class="record-card">
+                <div class="record-card-row">
+                    <div class="record-image">
+                        <div class="image-header">
+                            Item {{ page_obj.start_index|add:forloop.counter0 }}
+                        </div>
+                        <div class="image">
+                            <a href="{{item.get_absolute.url }}">
+                                <img src="https://placehold.co/200x275" alt="placeholder" class="image-source">
+                            </a>
+                        </div>
+                    </div>
+                    <div class="record-card-details">
+                        <div class="detail-header">
+                            <div class="detail-header-message">OUT OF STOCK</div>
+                            <div class="detail-header-buttons">
+                                <i class="bi bi-info-circle "></i>
+                                <i class="bi bi-unlock"></i>
+                            </div>
+                        </div>
+                        <div class="detail-body">
+                            <div class="detail-body-main">
+                                <div class="details">
+                                    <h2>
+                                        <a href={{object.get_absolute_url}}>{{object.title}}</a>
+                                    </h2>
+                                    <div class="supplementary-info">
+                                        <span class="author">
+                                            {{object.author.all|join:", "}}
+                                        </span>
+                                        <span class="publish-year">
+                                            {{object.publish_date|date:"Y"}}
+                                        </span>
+                                    </div>
+                                    <div class="item-type">
+                                        {{object.get_item_type_display}}
+                                    </div>
+                                    <div class="item-summary">
+                                        {{object.summary}}
+                                    </div>
+                                </div>
+                                {% if perms.library.change_book or perms.library_change_videogame %}
+                                <div class="record-options">
+                                    <a class="btn btn-outline-primary" role="button">
+                                        Edit Item
+                                    </a>
+                                    <a class="btn btn-outline-primary" role="button">
+                                        Change Item Visibility
+                                    </a>
+                                    <a class="btn btn-outline-primary" role="button">
+                                        Add Copy
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="detail-body-available">
+                                <div class="detail-body-available-container">
+                                    <div class="availability-link">
+                                        <a href="{{object.get_absolute_url}}">
+                                            View Record
+                                        </a>
+                                    </div>
+                                    <div class="availability-amounts">
+                                        TO BE ADDED
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% endblock content %}
+    {% block footer %}
+    <script src="https://code.jquery.com/jquery-3.7.0.slim.min.js"></script>
+    <script>
+        $(function () {
+            function imageLoaded() {
+                this.classList.add("image-loaded")
+            }
+            $('img').each(function () {
+                if (this.complete) {
+                    imageLoaded.call(this);
+                } else {
+                    $(this).one('load', imageLoaded);
+                }
+            });
+        });
+    </script>
+    {% endblock footer %}

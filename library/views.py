@@ -1,8 +1,15 @@
 from django.shortcuts import render, redirect
-from django.views.generic import ListView, DetailView, TemplateView
+from django.views.generic import (
+    ListView,
+    DetailView,
+    TemplateView,
+    CreateView,
+    DeleteView,
+)
 from .models import Book, VideoGame, Author, Series, Borrower
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.models import Group
+from django.urls import reverse_lazy
 
 # Create your views here.
 
@@ -80,7 +87,8 @@ class NoPermissionMixin:
 class BookListView(NoPermissionMixin, PermissionRequiredMixin, ListView):
     permission_required = ["library.view_book"]
     model = Book
-    paginate_by = 100
+    paginate_by = 10
+    template_name = "library/item_list.html"
 
 
 class BookDetailView(NoPermissionMixin, PermissionRequiredMixin, DetailView):
@@ -88,15 +96,89 @@ class BookDetailView(NoPermissionMixin, PermissionRequiredMixin, DetailView):
     permission_required = ["library.view_book"]
 
 
+class BookAdd(NoPermissionMixin, PermissionRequiredMixin, CreateView):
+    permission_required = ["library.add_book"]
+    model = Book
+    fields = [
+        "title",
+        "summary",
+        "isbn",
+        "author",
+        "genre",
+        "item_language",
+        "publish_date",
+        "part_of_series",
+        "series",
+        "position_in_series",
+    ]
+    template_name = "library/item_add.html"
+    raise_exception = True
+    success_message = "Book created successfully."
+
+    def form_valid(self, form):
+        if not form.instance.part_of_series and (
+            form.instance.series or form.instance.position_in_series
+        ):
+            form.instance.series = None
+            form.instance.position_in_series = None
+        return super().form_valid(form)
+
+
+class BookDelete(NoPermissionMixin, PermissionRequiredMixin, DeleteView):
+    permission_required = ["library.delete_book"]
+    permission_denied_message = "Access Forbidden"
+    model = Book
+    template_name = "library/item_delete.html"
+    slug_field = "id"
+    success_url = reverse_lazy("library:books")
+
+
 class VGListView(NoPermissionMixin, PermissionRequiredMixin, ListView):
     permission_required = ["library.view_videogame"]
     model = VideoGame
     paginate_by = 100
+    template_name = "library/item_list.html"
 
 
 class VGDetailView(NoPermissionMixin, PermissionRequiredMixin, DetailView):
     model = VideoGame
     permission_required = ["library.view_videogame"]
+
+
+class VGAdd(NoPermissionMixin, PermissionRequiredMixin, CreateView):
+    permission_required = ["library.add_videogame"]
+    model = VideoGame
+    fields = [
+        "title",
+        "summary",
+        "author",
+        "developer",
+        "platform",
+        "item_language",
+        "publish_date",
+        "part_of_series",
+        "series",
+        "position_in_series",
+    ]
+    template_name = "library/item_add.html"
+    raise_exception = True
+    success_message = "Video Game created successfully."
+
+    def form_valid(self, form):
+        if not form.instance.part_of_series and (
+            form.instance.series or form.instance.position_in_series
+        ):
+            form.instance.series = None
+            form.instance.position_in_series = None
+        return super().form_valid(form)
+
+
+class VGDelete(NoPermissionMixin, PermissionRequiredMixin, DeleteView):
+    permission_required = ["videogame.delete_book"]
+    permission_denied_message = "Access Forbidden"
+    model = VideoGame
+    template_name = "library/item_delete.html"
+    success_url = reverse_lazy("library:videogames")
 
 
 class AuthorListView(NoPermissionMixin, PermissionRequiredMixin, ListView):

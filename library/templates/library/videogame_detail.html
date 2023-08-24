@@ -53,6 +53,37 @@
 <p><strong>Genre:</strong> {{ videogame.genre.all|join:", " }}</p>
 <p><strong>Platform:</strong> {{ videogame.platform}}</p>
 <p><strong>Publish Date:</strong> {{ videogame.publish_date }}</p>
+
+{% if request.user.is_school_staff or request.user.is_superuser %}
+<div class="item-management px-3 alert alert-warning border-danger border-3 rounded-1">
+    <h5 class="mb-3 fw-bold">Staff Access: Library Item Management</h5>
+    <div class="d-flex align-items-center gap-3 justify-content-between">
+        <div class="item-management-add-class">
+            <a type="button" class="btn btn-primary border-secondary text-decoration-none m-0 border-2 fw-bolder"
+                href="#" role="button">
+                Edit Video Game
+            </a>
+        </div>
+        <div class="item-management-item-modify d-flex align-items-center gap-3">
+            {% if perms.library.change_videogame %}
+            <a type="button" class="btn border-secondary btn-primary text-decoration-none m-0 border-2 fw-bolder"
+                href="#" role="button">
+                Add/Remove to Series
+            </a>
+            {% endif %}
+            {% if perms.library.delete_videogame %}
+            <a class="btn btn-danger text-decoration-none m-0 border-secondary border-1 fw-bolder"
+                href="{% url 'library:videogame-delete' object.pk %}" role="button">
+                Delete Video Game
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
+
 <div style="margin-left:20px;margin-top:20px">
     <h4>Copies</h4>
 

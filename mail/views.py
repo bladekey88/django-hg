@@ -13,7 +13,9 @@ from django.contrib.auth.mixins import (
 
 class MainView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
-        return self.request.user.is_superuser
+        return any(
+            [self.request.user.is_superuser, self.request.user.uid == "a.weasley"]
+        )
 
     def get(self, request):
         subject = "Test Email"
@@ -21,7 +23,7 @@ class MainView(LoginRequiredMixin, UserPassesTestMixin, View):
             """This is a test mail. You do not need to take any further actions."""
         )
         from_email = EMAIL_HOST_USERNAME
-        recipient_list = Staff.objects.all()
+        recipient_list = [request]
         messages = [
             (subject, message, from_email, [r.user.email]) for r in recipient_list
         ]
@@ -33,5 +35,5 @@ class MainView(LoginRequiredMixin, UserPassesTestMixin, View):
                 auth_password=EMAIL_HOST_PASSWORD,
             )
             return HttpResponse("Sent Email")
-        except SMTPDataError:
-            raise PermissionDenied("Access Denied")
+        except SMTPDataError as e:
+            raise PermissionDenied("Access Denied -", e)
