@@ -176,7 +176,7 @@ class AuthorAdmin(admin.ModelAdmin):
 class BorrowerAdmin(admin.ModelAdmin):
     model = Borrower
 
-    @admin.display(description="Author(s)")
+    @admin.display(description="Members")
     def borrower_name(self, obj):
         return obj.user.full_common_name()
 

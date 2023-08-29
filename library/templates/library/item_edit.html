@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
-{% block title %}Hogwarts Library: Add Item{% endblock title %}
+{% block title %}Hogwarts Library: Edit Item{% endblock title %}
 {% block brand %}Hogwarts Library{% endblock brand %}
 {% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
 {% block pagestyle %}
@@ -77,9 +77,13 @@
     </a>
 </li>
 <li>
+    <a href="{{object.get_absolute_url}}" class="breadcrumbs">
+        <span property="name">{{object}}</span>
+    </a>
+</li>
+<li>
     <a href="{{request.url}}" class="breadcrumbs-current-page">
-        <span class="text-secondary" property="name">Add Item</span>
-        {{request.resolver_match.view_name}}
+        <span class="text-secondary" property="name">Edit {{object}}</span>
     </a>
 </li>
 {% endblock breadcrumbs_current_page %}
@@ -88,7 +92,7 @@
 
 {% block content %}
 <div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
-    <h3>Add Item</h3>
+    <h3 class="fw-bold">Edit {{object.get_item_type_display}}</h3>
 
 </div>
 <div class="add-form">

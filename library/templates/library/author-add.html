@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
-{% block title %}Hogwarts Library: Add Item{% endblock title %}
+{% block title %}Hogwarts Library: Add Author{% endblock title %}
 {% block brand %}Hogwarts Library{% endblock brand %}
 {% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
 {% block pagestyle %}
@@ -8,7 +8,6 @@
     @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400&display=swap');
 
     * {
-
         box-sizing: border-box;
         font-family: Raleway;
         padding: 0;
@@ -18,7 +17,6 @@
     .add-form {
         background-color: #fefefe;
         min-width: 50%;
-
     }
 
     .add-form input,
@@ -77,9 +75,13 @@
     </a>
 </li>
 <li>
+    <a href="{% url 'library:authors' %}" class="breadcrumbs">
+        <span property="name">Authors List</span>
+    </a>
+</li>
+<li>
     <a href="{{request.url}}" class="breadcrumbs-current-page">
-        <span class="text-secondary" property="name">Add Item</span>
-        {{request.resolver_match.view_name}}
+        <span class="text-secondary" property="name">Add Author</span>
     </a>
 </li>
 {% endblock breadcrumbs_current_page %}
@@ -88,7 +90,7 @@
 
 {% block content %}
 <div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
-    <h3>Add Item</h3>
+    <h3>Add Author</h3>
 
 </div>
 <div class="add-form">

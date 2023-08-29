@@ -36,6 +36,17 @@
         <a class="btn btn-primary" href='{% url "school:home" %}'>Home</a>
     </div>
 </div>
+{% elif request.user.library_user.status == "P" %}
+<div class="alert alert-warning border-secondary border-4 rounded-3 shadow-lg align-items-center text-center">
+    <h3 class="fw-bolder  fw-bold">
+        Your Hogwarts Library account is pending approval.<br />
+    </h3>
+    <hr>
+    <div class="buttons d-block gap-5 ">
+        <h5 class="mb-3 fw-bold">Please contact a member of library staff for more information.</h5>
+        <a class="btn btn-primary" href='{% url "school:home" %}'>Home</a>
+    </div>
+</div>
 {% else %}
 
 {% if welcome %}
@@ -85,6 +96,14 @@
         </a>
         {{ num_authors }}
     </li>
+    {% if perms.library.view_borrower %}
+    <li>
+        <a href="{% url 'library:borrowers' %}">
+            <strong>Members:</strong>
+        </a>
+        {{ num_borrowers }}
+    </li>
+    {% endif %}
 </ul>
 <p>
     You have visited this page {{ num_visits }} time{{ num_visits|pluralize }}.

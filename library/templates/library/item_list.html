@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Hogwarts Library: Books{% endblock title %}
+{% block title %}Hogwarts Library: Items{% endblock title %}
 {% block brand %}Hogwarts Library{% endblock brand %}
 {% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
 
@@ -195,10 +195,10 @@
 
     .detail-body-main {
         display: flex;
-        flex: wrap;
+        flex-wrap: wrap;
         margin-left: -1rem;
         margin-right: -1rem;
-        margin-top: 1rem;
+        margin-top: 0.5rem;
     }
 
     .detail-body-main .details {
@@ -346,7 +346,9 @@
 </li>
 <li>
     <a href="{{request.url}}" class="breadcrumbs-current-page">
-        <span class="text-secondary" property="name">{{object_list.first.get_item_type_display}}s</span>
+        <span class="text-secondary" property="name">
+            {{object_list.first.get_item_type_display}}
+        </span>
     </a>
 </li>
 {% endblock breadcrumbs_current_page %}
@@ -354,10 +356,11 @@
 
 {% block content %}
 <div class="library-item-header">
-    <h3 class="fw-bolder">{{object_list.first.get_item_type_display}} List</h3>
+    <h3 class="fw-bolder">{% if series_list %}Series{%else%}{{object_list.first.get_item_type_display}}s{%endif%} List
+    </h3>
     {% if perms.library.add_book %}
-    <a class="btn btn-outline-info rounded-0" href="{{request.url}}add">Add
-        {{object_list.first.get_item_type_display}}
+    <a class="btn btn-outline-primary rounded-0" href="{{request.url}}add">Add
+        {% if series_list %}Series{%else%}{{object_list.first.get_item_type_display}}{%endif%}
     </a>
     {% endif %}
 </div>
@@ -400,7 +403,8 @@
         </div>
         {% for object in object_list %}
         <div class="records">
-            <div class="record-card">
+            <div class="record-card" {% if not object.visible %}
+                style="border: 3px dashed grey; background-color: #d6d6d6;" {% endif %}>
                 <div class="record-card-row">
                     <div class="record-image">
                         <div class="image-header">
@@ -415,9 +419,22 @@
                     <div class="record-card-details">
                         <div class="detail-header">
                             <div class="detail-header-message">OUT OF STOCK</div>
-                            <div class="detail-header-buttons">
-                                <i class="bi bi-info-circle "></i>
-                                <i class="bi bi-unlock"></i>
+                            <div class="detail-header-buttons h5">
+                                {% if perms.library.change_book or perms.library.change_videogame %}
+                                {% if object.visible %}
+                                <i class="bi bi-eye text-success fw-bold" title="Visible to Members" role="presentation"
+                                    aria-hidden="true"></i>
+                                {% else %}
+                                <i class="bi bi-eye-slash text-warning fw-bold" title="Hidden from Members"
+                                    role="presentation" aria-hidden="true"></i>
+                                {% endif %}
+                                {% endif %}
+                                {% if object.restricted %}
+                                <i class="bi bi-lock text-danger fw-bold" aria-hidden="true" title="Restricted"></i>
+                                {% else %}
+                                <i class="bi bi-unlock text-success fw-bold" aria-hidden="true"
+                                    title="Unrestricted"></i>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="detail-body">
@@ -428,7 +445,14 @@
                                     </h2>
                                     <div class="supplementary-info">
                                         <span class="author">
+                                            {% if object.item_type == "V" %}
+                                            {{object.developer.all|join:", "}}
+                                            {% else %}
                                             {{object.author.all|join:", "}}
+                                            {% endif %}
+                                        </span>
+                                        <span class="author">
+                                            {{object.platform}}
                                         </span>
                                         <span class="publish-year">
                                             {{object.publish_date|date:"Y"}}
@@ -443,7 +467,8 @@
                                 </div>
                                 {% if perms.library.change_book or perms.library_change_videogame %}
                                 <div class="record-options">
-                                    <a class="btn btn-outline-primary" role="button">
+                                    <a class="btn btn-outline-primary" href="{% url 'library:item-edit' object.id %}"
+                                        role="button">
                                         Edit Item
                                     </a>
                                     <a class="btn btn-outline-primary" role="button">
@@ -477,7 +502,6 @@
 
     {% endblock content %}
     {% block footer %}
-    <script src="https://code.jquery.com/jquery-3.7.0.slim.min.js"></script>
     <script>
         $(function () {
             function imageLoaded() {

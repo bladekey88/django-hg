@@ -2,6 +2,24 @@
 {% block title %}Hogwarts Library: Authors{% endblock title %}
 {% block brand %}Hogwarts Library{% endblock brand %}
 {% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
+{% block pagestyle %}
+<style>
+    .library-author-header {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        align-items: center;
+    }
+
+    .author-list {
+        display: flex;
+        flex-wrap: wrap;
+        border-top: 1px solid #e6e7e8;
+        padding-top: 1rem;
+    }
+</style>
+{% endblock pagestyle %}
 {% block breadcrumbs_current_page %}
 <li>
     <a href="{% url 'library:index' %}" class="breadcrumbs">
@@ -18,34 +36,43 @@
 
 
 {% block content %}
-<h1>Author List</h1>
-{% if author_list %}
-<ul>
-    {% for author in author_list %}
-    <li>
-        <a href="{{ author.get_absolute_url }}">
-            {{author}} ({{author.get_author_type_display}})
-            {% if author.date_of_birth %} ({{author.date_of_birth}} - {%endif%}
-            {% if author.date_of_death %} {{author.date_of_death}} {%endif%}
-            {% if author.date_of_birth or author.date_of_death %}){%endif%}
-        </a>
-    </li>
-    {% endfor %}
-</ul>
-{% block pagination %}
-{% if is_paginated %}
-<div class="pagination">
-    <span class="page-links">
-        {% if page_obj.has_previous %}
-        <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}" class="pe-2">Previous</a>
-        {% endif %}
-        <span class=" page-current">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+<div class="library-author-header">
+    <h3 class="fw-bolder">Authors List</h3>
+    {% if perms.library.add_author %}
+    <a class="btn btn-outline-primary rounded-0 add-member-button" href="{% url 'library:author-add'%}">
+        Add Author
+    </a>
+    {% endif %}
+</div>
+<div class="author-list">
+    {% if author_list %}
+    <ul>
+        {% for author in author_list %}
+        <li>
+            <a href="{{ author.get_absolute_url }}">
+                {{author}} ({{author.get_author_type_display}})
+                {% if author.date_of_birth %} ({{author.date_of_birth}} - {%endif%}
+                {% if author.date_of_death %} {{author.date_of_death}} {%endif%}
+                {% if author.date_of_birth or author.date_of_death %}){%endif%}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% block pagination %}
+    {% if is_paginated %}
+    <div class="pagination">
+        <span class="page-links">
+            {% if page_obj.has_previous %}
+            <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}" class="pe-2">Previous</a>
+            {% endif %}
+            <span class=" page-current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+            {% if page_obj.has_next %}
+            <a href="{{ request.path }}?page={{ page_obj.next_page_number }}" class="ps-2">Next</a>
+            {% endif %}
         </span>
-        {% if page_obj.has_next %}
-        <a href="{{ request.path }}?page={{ page_obj.next_page_number }}" class="ps-2">Next</a>
-        {% endif %}
-    </span>
+    </div>
 </div>
 {% endif %}
 {% endblock %}

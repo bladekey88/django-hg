@@ -290,6 +290,9 @@ class LibraryItem(models.Model):
         "Language",
     )
 
+    visible = models.BooleanField("Item Visible", default=True)
+    restricted = models.BooleanField("Item Restricted", default=False)
+
     def __str__(self):
         return f"{self.title}"
 
@@ -415,17 +418,22 @@ class Borrower(models.Model):
         CustomUser,
         on_delete=models.CASCADE,
         related_name="library_user",
+        verbose_name="Member",
     )
 
     class Meta:
         verbose_name = "Borrower"
         verbose_name_plural = "Borrowers"
+        ordering = [
+            "user__last_name",
+            "user__first_name",
+        ]
 
     class BorrowerStatus(models.TextChoices):
         ACTIVE = ("A", "Active")
         SUSPENDED = ("S", "Suspended")
         PENDING = ("P", "Pending")
-        INACTIVE = (("I", "Inactive"),)
+        INACTIVE = ("I", "Inactive")
 
     status = models.CharField(
         "Borrower Status",
@@ -438,7 +446,7 @@ class Borrower(models.Model):
         "Maximum Fine Amount",
         blank=True,
         null=True,
-        default=0.00,
+        default=5.00,
         help_text="Maximum fine before revoking borrowing privileges",
     )
 
@@ -446,7 +454,7 @@ class Borrower(models.Model):
         "Maximum Number of Items",
         blank=True,
         null=True,
-        default=0,
+        default=5,
         help_text="Maximum number of items a user can borrow at any one time",
     )
 

@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}Hogwarts Library: Members{% endblock title %}
+{% block brand %}Hogwarts Library{% endblock brand %}
+{% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
+{% block pagestyle %}
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<style>
+    .library-member-header {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        align-items: center;
+    }
+
+    .member-list {
+        display: flex;
+        flex-wrap: wrap;
+        border-top: 1px solid #e6e7e8;
+        padding-top: 1rem;
+    }
+
+    .load-table {
+        display: none;
+    }
+
+    .dataTables_wrapper {
+        flex-basis: 0;
+        flex-grow: 1;
+        max-width: 100%;
+        padding-left: 1rem;
+        padding-right: 1rem;
+
+    }
+
+    table {
+        border-collapse: collapse;
+        margin: 25px 0;
+        font-size: 0.9em;
+        font-family: sans-serif;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+        max-width: 100%;
+
+    }
+
+    thead tr {
+        background-color: #009879;
+        color: #ffffff;
+        text-align: left;
+    }
+
+    td,
+    th,
+    thead {
+        padding: 12px 15px;
+        text-align: center !important;
+    }
+
+    tbody tr {
+        border-bottom: 1px solid #dddddd;
+    }
+
+    tbody tr:nth-of-type(even) {
+        background-color: #f3f3f3;
+    }
+
+    tbody tr:last-of-type {
+        border-bottom: 2px solid #009879;
+    }
+
+
+    tbody>tr:hover {
+        color: #009879;
+        font-weight: bolder;
+        background-color: rgb(250, 250, 78, 0.6) !important;
+    }
+
+    td {
+        padding: 1rem 3rem 1rem;
+
+    }
+
+    td>a {
+        text-decoration: none;
+    }
+
+    .user-pending::after {
+        content: "!";
+        color: red;
+        font-weight: 800;
+        vertical-align: super;
+        font-size: smaller;
+    }
+
+    .status-pending {
+        color: #17a2b8;
+        border-color: #0062cc;
+        font-weight: 600;
+    }
+
+    .status-pending:hover {
+        color: #138496;
+    }
+
+    .status-active {
+        color: #28a745;
+        font-weight: 800;
+    }
+
+    .status-active:hover {
+        color: #1e7e34;
+
+    }
+
+    .status-suspended {
+        color: #dc3545;
+        font-weight: 800;
+    }
+
+    .status-suspended:hover {
+        color: #c82333;
+    }
+
+    .status-inactive,
+    .status-inactive:hover {
+        color: #545b62;
+        font-style: italic;
+    }
+</style>
+
+{% endblock pagestyle %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'library:index' %}" class="breadcrumbs">
+        <span property="name">Library</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">Members</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
+{% block contentclass %}container px-3 my-4{% endblock contentclass%}
+{% block content %}
+<div class="library-member-header">
+    <h3 class="fw-bolder">Members List
+    </h3>
+    {% if perms.library.add_borrower %}
+    <a class="btn btn-outline-primary rounded-0 add-member-button" href="{{request.url}}add">
+        Add Member
+    </a>
+    {% endif %}
+</div>
+<div class="member-list">
+    {% if borrower_list %}
+    <table id="member-table" class="table load-table table-responsive">
+        <thead>
+            <tr>
+                <th class="col-1">Name</th>
+                <th class="col-2">Last Name</th>
+                <th class="col-3">First Name</th>
+                <th class="col-4">No. Items Checked Out</th>
+                <th class="col-5">No. Items Reserved</th>
+                <th class="col-6">Status</th>
+            </tr>
+        </thead>
+        {% for borrower in borrower_list %}
+        <tr>
+            <td style="width:15%" class="col-1 {% if borrower.status == 'P' %}user-pending {%endif %}">
+                <a href="{% url 'library:borrower-edit' borrower.id %}">{{borrower.user.full_common_name}}</a>
+            </td>
+            <td class="col-2">{{borrower.user.last_name}}</td>
+            <td class="col-3">{{borrower.user.first_name}}</td>
+            <td class="col-4">0</td>
+            <td class="col-5">0</td>
+            <td class="col-6">
+                <span class="status-{{borrower.get_status_display|lower}} ">
+                    {{borrower.get_status_display}}
+                </span>
+                {% if borrower.status == "P" %} |
+                <a href="{% url 'library:borrowers-activate' borrower.id %}">
+                    <span class="">Activate</span>
+                </a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% block pagination %}
+    {% if is_paginated %}
+    <div class="pagination">
+        <span class="page-links">
+            {% if page_obj.has_previous %}
+            <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}" class="pe-2">Previous</a>
+            {% endif %}
+            <span class=" page-current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+            {% if page_obj.has_next %}
+            <a href="{{ request.path }}?page={{ page_obj.next_page_number }}" class="ps-2">Next</a>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+    {% endblock pagination %}
+
+    {% else %}
+    <p>There are no members.</p>
+    {% endif %}
+</div>
+{% endblock content %}
+{% block footer %}
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function () {
+        let table = new DataTable(
+            "#member-table",
+            {
+                stateSave: false,
+                paging: true,
+                ordering: true,
+                order: [[5, "desc"], [0, "asc"]],
+                pageLength: 10,
+                lengthMenu: [[5, 10, 25], [5, 10, 25]],
+            });
+        $("#member-table").removeClass("load-table");
+    })
+</script>
+
+{% endblock footer %}
