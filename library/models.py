@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 import uuid
 from users.models import CustomUser
 from django.urls import reverse
+from django.core.validators import MinValueValidator
 
 
 # Create your models here.
@@ -444,6 +445,9 @@ class Borrower(models.Model):
 
     max_fine_amount = models.FloatField(
         "Maximum Fine Amount",
+        validators=[
+            MinValueValidator(0.0, "Amount must be a positive number"),
+        ],
         blank=True,
         null=True,
         default=5.00,

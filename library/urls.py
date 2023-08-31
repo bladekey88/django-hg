@@ -32,7 +32,13 @@ urlpatterns = [
     path("authors/<str:pk>", views.AuthorDetailView.as_view(), name="author-detail"),
     path("members/", views.BorrowerListView.as_view(), name="borrowers"),
     path("members/add/", views.BorrowerAdd.as_view(), name="borrowers-add"),
+    path("members/<str:pk>/", views.BorrowerDetail.as_view(), name="borrower-detail"),
     path("members/<str:pk>/edit/", views.BorrowerEdit.as_view(), name="borrower-edit"),
+    path(
+        "members/<str:pk>/delete/",
+        views.BorrowerDelete.as_view(),
+        name="borrower-delete",
+    ),
     path(
         "members/<str:pk>/activate/",
         views.BorrowerActivate.as_view(),

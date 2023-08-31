@@ -78,7 +78,12 @@
 </li>
 <li>
     <a href="{% url 'library:borrowers' %}" class="breadcrumbs">
-        <span property="name">Members List</span>
+        <span property="name">Members</span>
+    </a>
+</li>
+<li>
+    <a href="{% url 'library:borrower-detail' object.pk %}" class="breadcrumbs">
+        <span property="name">{{object.user.full_common_name}}</span>
     </a>
 </li>
 

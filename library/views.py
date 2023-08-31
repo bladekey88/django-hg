@@ -1,4 +1,8 @@
+from typing import Any
+from django.db import models
 from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.messages.views import SuccessMessageMixin
 from django.views.generic import (
     ListView,
     DetailView,
@@ -13,6 +17,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.contrib.auth.models import Group
 from django.urls import reverse_lazy
 from django.http import Http404
+from users.models import CustomUser
 
 # Create your views here.
 
@@ -22,18 +27,16 @@ class LibraryHomeView(ListView):
 
     def get(self, request):
         # Generate counts of some of the main objects
-        num_books = Book.objects.count()
-        num_vg = VideoGame.objects.count()
-        num_series = Series.objects.count()
-        # num_instances = BookInstance.objects.all().count()
+        if request.user.groups.filter(name="Librarians"):
+            num_books = Book.objects.count()
+            num_vg = VideoGame.objects.count()
+        else:
+            num_books = Book.objects.filter(visible=True).count()
+            num_vg = VideoGame.objects.filter(visible=True).count()
+
+        num_series: int = Series.objects.count()
         num_borrowers = Borrower.objects.count()
-        # Available books (status = 'a')
-        # num_instances_available = BookInstance.objects.filter(status__exact="a").count()
-
-        # The 'all()' is implied by default.
         num_authors = Author.objects.count()
-
-        # Number of visits to this view, as counted in the session variable.
         num_visits = request.session.get("num_visits", 0)
         request.session["num_visits"] = num_visits + 1
 
@@ -231,6 +234,8 @@ class VGDetailView(NoPermissionMixin, PermissionRequiredMixin, DetailView):
                 return super().get(request, *args, **kwargs)
             else:
                 raise Http404
+        else:
+            return super().get(request, *args, **kwargs)
 
 
 class VGAdd(NoPermissionMixin, PermissionRequiredMixin, CreateView):
@@ -375,9 +380,12 @@ class BorrowerAdd(NoPermissionMixin, PermissionRequiredMixin, CreateView):
     template_name = "library/borrower_add.html"
     raise_exception = True
     success_message = "Borrower created successfully."
+    success_url = reverse_lazy("library:borrowers")
 
 
-class BorrowerEdit(NoPermissionMixin, PermissionRequiredMixin, UpdateView):
+class BorrowerEdit(
+    NoPermissionMixin, SuccessMessageMixin, PermissionRequiredMixin, UpdateView
+):
     permission_required = ["library.change_borrower"]
     model = Borrower
     fields = [
@@ -387,5 +395,46 @@ class BorrowerEdit(NoPermissionMixin, PermissionRequiredMixin, UpdateView):
     ]
     template_name = "library/borrower_edit.html"
     raise_exception = True
-    success_message = "Borrower updated successfully."
-    success_url = reverse_lazy("library:borrower")
+    success_message = "Member updated successfully"
+
+    def get_success_url(self) -> str:
+        return reverse_lazy("library:borrower-detail", kwargs={"pk": self.object.pk})
+
+
+class BorrowerDetail(NoPermissionMixin, DetailView):
+    model = Borrower
+    template_name = "library/borrower_detail.html"
+
+    def get(self, request, *args, **kwargs):
+        if request.user.is_superuser or request.user.groups.filter(name="Librarians"):
+            return super().get(request, *args, **kwargs)
+        else:
+            if str(request.user.library_user.pk) == str(kwargs["pk"]):
+                return super().get(request, *args, **kwargs)
+            else:
+                return redirect(
+                    "library:borrower-detail", pk=request.user.library_user.pk
+                )
+                return redirect("library:borrower-detail", request.user.pk)
+
+
+class BorrowerDelete(
+    NoPermissionMixin, SuccessMessageMixin, PermissionRequiredMixin, DeleteView
+):
+    permission_required = ["library.delete_borrower"]
+    permission_denied_message = "Access Forbidden"
+    model = Borrower
+    template_name = "library/borrower-delete.html"
+    success_url = reverse_lazy("library:borrowers")
+    success_message = (
+        "Member has been marked for deletion. Deletion will occur after admin review."
+    )
+
+    def get_success_message(self, cleaned_data):
+        return self.success_message
+
+    def form_valid(self, form):
+        self.object.status = "I"
+        self.object.save()
+        messages.success(self.request, self.success_message)
+        return redirect(self.success_url)
