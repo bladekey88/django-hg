@@ -21,7 +21,11 @@
     </h4>
     <hr>
     <div class="buttons d-flex flex-center justify-content-center align-items-center gap-5">
+        {% if request.user.is_anonymous %}
+        <a class="btn btn-primary" href='{% url "account:login" %}?next={{request.path}}'>Log In</a>
+        {% else %}
         <a class="btn btn-primary" href='{% url "library:create-account" %}'>Create Account</a>
+        {% endif %}
         <a class="btn btn-primary" href='{% url "school:home" %}'>Home</a>
     </div>
 </div>

@@ -11,6 +11,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--overwrite",
+            "-O",
             help="Force sync to overwrite values instead of skipping",
             action="store_true",
         )
@@ -34,7 +35,7 @@ class Command(BaseCommand):
 
             except Borrower.DoesNotExist:  # Doesn't exist, so create it!
                 new_borrower = Borrower(
-                    user=cuser, borrower_status=Borrower.BorrowerStatus.PENDING
+                    user=cuser, status=Borrower.BorrowerStatus.PENDING
                 )
                 new_borrower.save()
                 cuser.groups.add(Group.objects.get(name="Library Members"))

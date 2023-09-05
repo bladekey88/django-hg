@@ -355,6 +355,9 @@
 {% block contentclass %}container px-3 my-4{% endblock contentclass%}
 
 {% block content %}
+{{object_list.first}}
+
+
 <div class="library-item-header">
     <h3 class="fw-bolder">{% if series_list %}Series{%else%}{{object_list.first.get_item_type_display}}s{%endif%} List
     </h3>
@@ -403,7 +406,7 @@
         </div>
         {% for object in object_list %}
         <div class="records">
-            <div class="record-card" {% if not object.visible %}
+            <div class="record-card" {% if not object.visible and object.item_type %}
                 style="border: 3px dashed grey; background-color: #d6d6d6;" {% endif %}>
                 <div class="record-card-row">
                     <div class="record-image">
@@ -471,7 +474,8 @@
                                         role="button">
                                         Edit Item
                                     </a>
-                                    <a class="btn btn-outline-primary" role="button">
+                                    <a class="btn btn-outline-primary"
+                                        href="{% url 'library:item-visibility' object.pk%}" role="button">
                                         Change Item Visibility
                                     </a>
                                     <a class="btn btn-outline-primary" role="button">
@@ -488,7 +492,13 @@
                                         </a>
                                     </div>
                                     <div class="availability-amounts">
-                                        TO BE ADDED
+                                        {% if object.get_count_child_instance > 0 %}
+                                        {{object.get_count_child_instance}}
+                                        cop{{object.get_count_child_instance|pluralize:"y,ies"}},
+                                        {{object.get_available_child_instance}} Available
+                                        {% else %}
+                                        No copies In library
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>

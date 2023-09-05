@@ -46,8 +46,11 @@
 </div>
 
 {% if videogame.part_of_series %}
-<p><strong>Series:</strong> {{videogame.series.name}} - (Game {{videogame.position_in_series}} of
-    {{videogame.series.videogame_set.all.count}})</p>
+<p><strong>Series:</strong>
+    <a href="{{videogame.series.get_absolute_url}}">{{videogame.series.title}} (Game
+        {{videogame.position_in_series}} of
+        {{videogame.series.videogame_set.all.count}})</a>
+</p>
 {%endif%}
 <p><strong>Language:</strong> {{ videogame.item_language.all|join:", " }}</p>
 <p><strong>Genre:</strong> {{ videogame.genre.all|join:", " }}</p>

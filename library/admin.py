@@ -1,21 +1,33 @@
-from typing import Optional
 from django.contrib import admin
-from django.http.request import HttpRequest
-from .models import Author, Genre, Series, Book, VideoGame, Borrower, Language
-from django.contrib.auth.models import Permission
+from .models import (
+    Author,
+    Genre,
+    Series,
+    Book,
+    VideoGame,
+    Borrower,
+    Language,
+    BookInstance,
+)
 
 
-class PermissionAdmin(admin.ModelAdmin):
-    model = Permission
-    search_fields = ["name", "content_type__app_label"]
-    list_filter = ["content_type__app_label"]
+# Custom Actions
+@admin.action(
+    description="Activate selected Members",
+    permissions=["change"],
+)
+def activate_members(modeladmin, request, queryset):
+    queryset.update(status="A")
 
 
-admin.site.register(Permission, PermissionAdmin)
-# Register your models here.
+class BookInstanceInline(admin.TabularInline):
+    model = BookInstance
+    extra = 0
+    can_delete = False
 
 
 class BookAdmin(admin.ModelAdmin):
+    inlines = [BookInstanceInline]
     model = Book
     filter_horizontal = ["author", "genre", "item_language"]
 
@@ -56,6 +68,48 @@ class BookInline(admin.TabularInline):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+class BookInstanceAdmin(admin.ModelAdmin):
+    model = BookInstance
+    filter_horizontal = ["item_language"]
+
+    @admin.display(description="Author(s)")
+    def display_author(self, obj):
+        return ", ".join(
+            author.display_name
+            for author in obj.book.author.all().order_by("last_name")[:3]
+        )
+
+    @admin.display(description="Genre(s)")
+    def display_genre(self, obj):
+        return ", ".join(
+            genre.name for genre in obj.book.genre.all().order_by("name")[:3]
+        )
+
+    @admin.display(description="Language")
+    def display_language(self, obj):
+        return ", ".join(lang.name for lang in obj.item_language.all())
+
+    list_display = [
+        "book",
+        "cover_type",
+        "status",
+        "isbn",
+        "display_author",
+        "display_genre",
+        "display_language",
+        "instance_id",
+    ]
+
+    list_filter = [
+        "cover_type",
+        "status",
+        "publish_date",
+        "item_language",
+    ]
+
+    search_fields = ["book__title", "book__authors__last_name"]
 
 
 class VideoGameAdmin(admin.ModelAdmin):
@@ -175,6 +229,7 @@ class AuthorAdmin(admin.ModelAdmin):
 
 class BorrowerAdmin(admin.ModelAdmin):
     model = Borrower
+    actions = [activate_members]
 
     @admin.display(description="Members")
     def borrower_name(self, obj):
@@ -185,6 +240,7 @@ class BorrowerAdmin(admin.ModelAdmin):
         "status",
         "max_fine_amount",
         "borrow_limit",
+        "is_librarian",
     ]
     list_filter = [
         "status",
@@ -226,3 +282,4 @@ admin.site.register(Genre, GenreAdmin)
 admin.site.register(Language, LanguageAdmin)
 admin.site.register(Series, SeriesAdmin)
 admin.site.register(VideoGame, VideoGameAdmin)
+admin.site.register(BookInstance, BookInstanceAdmin)

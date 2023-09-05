@@ -4,6 +4,8 @@ import uuid
 from users.models import CustomUser
 from django.urls import reverse
 from django.core.validators import MinValueValidator
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 
 
 # Create your models here.
@@ -198,6 +200,12 @@ class Series(models.Model):
         null=True,
     )
 
+    series_size = models.PositiveIntegerField(
+        "Number of Items in Series",
+        blank=True,
+        null=True,
+    )
+
     class Meta:
         verbose_name = "Series"
         verbose_name_plural = "Series"
@@ -240,6 +248,7 @@ class LibraryItem(models.Model):
         primary_key=True,
         default=uuid.uuid4,
         help_text="Unique ID for this particular item across whole library",
+        editable=False,
     )
 
     publish_date = models.DateField(
@@ -285,12 +294,10 @@ class LibraryItem(models.Model):
         choices=ItemType.choices,
         editable=False,
     )
-
     item_language = models.ManyToManyField(
         Language,
         "Language",
     )
-
     visible = models.BooleanField("Item Visible", default=True)
     restricted = models.BooleanField("Item Restricted", default=False)
 
@@ -302,6 +309,16 @@ class LibraryItem(models.Model):
         raise NotImplementedError(
             f"'get_absolute_url' method must be implemented in '{self._meta}'"
         )
+
+    def get_count_child_instance(self):
+        """Get the count of the instance objects of the model"""
+        raise NotImplementedError(
+            f"'get_count_child_instance' method must be implemented in '{self._meta}'"
+        )
+
+    def save(self):
+        self.get_count_child_instance()
+        super().save()
 
 
 class Book(LibraryItem):
@@ -339,6 +356,14 @@ class Book(LibraryItem):
     def get_absolute_url(self):
         """Returns the URL to access a detail record for this book."""
         return reverse("library:book-detail", args=[str(self.id)])
+
+    def get_count_child_instance(self):
+        return self.bookinstance_set.all().count()
+
+    def get_available_child_instance(self):
+        return self.bookinstance_set.filter(
+            status=BookInstance.BookItemStatus.AVAILABLE
+        ).count()
 
 
 class VideoGame(LibraryItem):
@@ -464,3 +489,79 @@ class Borrower(models.Model):
 
     def __str__(self):
         return f"{self.user.full_name()}"
+
+    def get_absolute_url(self):
+        return reverse("library:borrower-detail", kwargs={"pk": self.pk})
+
+    @property
+    def is_librarian(self):
+        return self.user.groups.filter(name="Librarians").exists()
+
+
+class BookInstance(models.Model):
+    instance_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        help_text="Unique ID for this particular book instance across whole library",
+        editable=False,
+    )
+    book = models.ForeignKey("Book", on_delete=models.RESTRICT, null=True)
+
+    class BookItemStatus(models.TextChoices):
+        AVAILABLE = ("A", "Available")
+        DAMAGED = ("D", "Damaged")
+        INTERNAL = ("I", "Internal")
+        LOST = ("L", "Lost")
+        ON_HOLD = ("H", "On Hold")
+        ON_LOAN = ("O", "On Loan")
+        MISSING = ("M", "Missing")
+        PROCESSING = ("P", "Processing")
+        UNAVAILABLE = ("U", "Unavailable")
+
+    status = models.TextField(
+        "Status",
+        choices=BookItemStatus.choices,
+        default=BookItemStatus.AVAILABLE,
+        max_length=1,
+    )
+
+    class BookCover(models.TextChoices):
+        HARDBACK = ("H", "Hardback")
+        PAPERBAK = ("P", "Paperback")
+        EBOOK = ("E", "E-book")
+
+    cover_type = models.TextField(
+        "Cover Type",
+        choices=BookCover.choices,
+        max_length=1,
+    )
+
+    isbn = models.CharField(
+        "ISBN",
+        max_length=13,
+        unique=False,
+        help_text="""Defaults to Book ISBN if not value entered""",  # noqa
+        blank=True,
+        null=True,
+    )
+
+    publish_date = models.DateField(
+        "Published On",
+        blank=True,
+        null=True,
+    )
+
+    item_language = models.ManyToManyField(
+        Language,
+        related_name="book_copy_language",
+    )
+
+    def __str__(self):
+        return f"{self.book.title}"
+
+    def save(self, *args, **kwargs):
+        if not self.isbn:
+            self.isbn = self.book.isbn
+        if not self.publish_date:
+            self.publish_date = self.book.publish_date
+        super().save(*args, **kwargs)

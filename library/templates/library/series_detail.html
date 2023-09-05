@@ -41,6 +41,24 @@
 {% block contentclass %}container px-3 my-4{% endblock contentclass%}
 
 {% block content %}
+
+{% if messages %}
+{% for message in messages %}
+<div class="notices mb-3">
+    <p
+        class="text-{{message.tags}} alert alert-{{message.tags}} p-0 rounded-0 border-0 border-3 border-top border-bottom border-{{message.tags}}">
+        <strong class="ms-2">
+            {% if message.tags == "success"%}
+            <i class="bi bi-check-circle"></i>
+            {{ message }}
+            {% endif %}
+        </strong>
+    </p>
+</div>
+{% endfor %}
+{% endif %}
+
+
 <h1>Title: {{ series.title }}</h1>
 <p><strong>Summary:</strong> {{ series.summary }}</p>
 <div class="mb-0">
@@ -57,8 +75,34 @@
 <p><strong>Number of items in Series:</strong> {{series.number_items_in_series}}</p>
 <p><strong>Language:</strong> English{{ series.item_language.all|join:", " }}</p>
 <p><strong>Genre:</strong> {{ series.genre.all|join:", " }}</p>
-<p><strong>Publish Date:</strong> {{ series.publish_date }}</p>
+{% if series.publish_date %}<p><strong>Publish Date:</strong> {{ series.publish_date }}</p>{% endif %}
 <p><strong>Permalink:</strong> <a href="{{ request.build_absolute_uri }}">{{ request.build_absolute_uri }}</a></p>
+
+{% if request.user.is_school_staff or request.user.is_superuser %}
+<div class="item-management px-3 alert alert-warning border-danger border-3 rounded-1">
+    <h5 class="mb-3 fw-bold">Staff Access: Library Item Management</h5>
+    <div class="d-flex align-items-center gap-3 justify-content-between">
+        <div class="item-management-add-class">
+            <a type="button" class="btn btn-primary border-secondary text-decoration-none m-0 border-2 fw-bolder"
+                href="{% url 'library:series-edit' object.id %}" role="button">
+                Edit Series
+            </a>
+        </div>
+        {% if perms.library.change_series %}
+        <p class="m-0 align-items-center">Items must be added to the Series from the Item's Page</p>
+        {% endif %}
+        <div class="item-management-item-modify d-flex align-items-center gap-3">
+            {% if perms.library.delete_series %}
+            <a href="{% url 'library:series-delete' object.id %}"
+                class="btn btn-danger text-decoration-none m-0 border-secondary border-1 fw-bolder" role="button">
+                Delete Series
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
 
 <h4>Items in Series</h4>
 <dl>
@@ -66,9 +110,10 @@
     <div class="books border-top my-2 py-2 ms-5">
         <h5>Books</h5>
         {% for book in series.book_set.all %}
+
         <div class="series-item-list">
             <dt>
-                <a href="{{ book.get_absolute_url}}">
+                <a {% if book.visible or perms.library.change_book %}href="{{ book.get_absolute_url}}" {% endif %}>
                     {{book}} ({{book.publish_date|date:"Y"}})
                 </a>
                 <span class="mb-0"> - {{book.author.all|join:", "}}</span>
@@ -79,7 +124,7 @@
             </dd>
             <dd>
                 <small class="text-secondary">Book <span class="fw-bolder">{{book.position_in_series}}</span> of <span
-                        class="fw-bolder">{{series.book_set.all.count}}</span>
+                        class="fw-bolder">{% if series.series_size %}{{series.series_size}}{%else%}{{series.book_set.all.count}}{%endif%}</span>
                 </small>
             </dd>
         </div>
@@ -93,7 +138,8 @@
         {% for vg in series.videogame_set.all %}
         <div class="series-item-list">
             <dt>
-                <a href="{{vg.get_absolute_url}}">
+                <a {% if videogame.visible and not perms.videogame.change_book %}href="{{vg.get_absolute_url}}"
+                    {%endif %}>
                     {{vg}} ({{vg.publish_date|date:"Y"}})
                 </a>
                 <p class="d-inline m-0 fw-light text-body-secondary"> - Developed by {{vg.developer.all|join:", "}},

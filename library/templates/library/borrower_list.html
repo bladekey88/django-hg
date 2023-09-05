@@ -5,6 +5,18 @@
 {% block pagestyle %}
 <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 <style>
+    .text-purple {
+        /* background-color: #550f9d; */
+        color: #881af7;
+        font-weight: 800;
+
+    }
+
+    td.librarian {
+        border-right: 5px solid #881af7;
+
+    }
+
     .library-member-header {
         display: flex;
         flex-wrap: nowrap;
@@ -39,6 +51,7 @@
         font-family: sans-serif;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
         max-width: 100%;
+        table-layout: fixed;
     }
 
     thead tr {
@@ -50,8 +63,9 @@
     td,
     th,
     thead {
-        padding: 12px 15px;
+        padding: 0.75rem 1rem;
         text-align: center !important;
+        overflow: hidden;
     }
 
     tbody tr {
@@ -166,24 +180,28 @@
 </div>
 <div class="member-list">
     {% if borrower_list %}
+
     <table id="member-table" class="table load-table table-responsive">
         <thead>
             <tr>
                 <th>Name</th>
-                <th>Last Name</th>
-                <th>First Name</th>
+                <th class="d-none d-md-table-cell">Last Name</th>
+                <th class="d-none d-md-table-cell">First Name</th>
                 <th>Items Checked Out</th>
                 <th>Items Reserved</th>
                 <th>Status</th>
+                <th>Account</th>
             </tr>
         </thead>
         {% for borrower in borrower_list %}
         <tr>
             <td style="width:15%" class="{% if borrower.status == 'P' %}user-pending {%endif %}">
-                <a href="{% url 'library:borrower-detail' borrower.id %}">{{borrower.user.full_common_name}}</a>
+                <a href="{% url 'library:borrower-detail' borrower.id %}">
+                    {{borrower.user.full_common_name}}
+                </a>
             </td>
-            <td>{{borrower.user.last_name}}</td>
-            <td>{{borrower.user.first_name}}</td>
+            <td class="d-none d-md-table-cell">{{borrower.user.last_name}}</td>
+            <td class="d-none d-md-table-cell">{{borrower.user.first_name}}</td>
             <td>0</td>
             <td>0</td>
             <td class="text-nowrap">
@@ -195,6 +213,14 @@
                     <span class="">Activate</span>
                 </a>
                 {% endif %}
+            </td>
+            {% if borrower.is_librarian %}
+            <td class="librarian">
+                <span class="text-purple fw-bold p-2">Librarian</span>
+                {% else %}
+            <td>
+                Member
+                {% endif%}
             </td>
         </tr>
         {% endfor %}

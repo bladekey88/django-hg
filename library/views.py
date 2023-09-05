@@ -1,5 +1,4 @@
-from typing import Any
-from django.db import models
+from django.apps import apps
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
@@ -17,9 +16,20 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.contrib.auth.models import Group
 from django.urls import reverse_lazy
 from django.http import Http404
+from django.core.exceptions import ObjectDoesNotExist
 from users.models import CustomUser
 
+
 # Create your views here.
+def get_parent_model(pk):
+    item_models = [Book, VideoGame, Series]
+    item = None
+    for model in item_models:
+        try:
+            item = model.objects.get(id=pk)
+        except ObjectDoesNotExist:
+            pass
+    return item.__class__.__name__ if item else False
 
 
 class LibraryHomeView(ListView):
@@ -165,16 +175,11 @@ class ItemEdit(NoPermissionMixin, PermissionRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         pk = kwargs["pk"]
-        try:
-            item = Book.objects.get(id=pk)
-        except Book.DoesNotExist:
-            try:
-                item = VideoGame.objects.get(id=pk)
-            except VideoGame.DoesNotExist:
-                raise Http404("Not Found")
-
-        if item:
-            return redirect(item.get_absolute_url() + "/edit")
+        item_type = get_parent_model(pk)
+        if item_type:
+            return redirect(f"library:{str(item_type).lower()}-edit", pk)
+        else:
+            raise Http404("Not Found")
 
 
 class BookEdit(NoPermissionMixin, PermissionRequiredMixin, UpdateView):
@@ -344,6 +349,33 @@ class SeriesAdd(NoPermissionMixin, PermissionRequiredMixin, CreateView):
     success_message = "Series created successfully."
 
 
+class SeriesEdit(
+    NoPermissionMixin, SuccessMessageMixin, PermissionRequiredMixin, UpdateView
+):
+    permission_required = ["library.change_series"]
+    template_name = "library/item_edit.html"
+    model = Series
+    fields = ["title", "author", "summary", "genre", "publish_date"]
+    success_message = "Series updated successfully."
+
+    def get_success_url(self) -> str:
+        return reverse_lazy("library:series-detail", kwargs={"pk": self.object.pk})
+
+
+class SeriesDelete(
+    NoPermissionMixin, SuccessMessageMixin, PermissionRequiredMixin, DeleteView
+):
+    permission_required = [
+        "library.delete_series",
+        "library.change_book",
+        "library.change_videogame",
+    ]
+
+    model = Series
+    template_name = "library/item_delete.html"
+    success_url = reverse_lazy("library:series")
+
+
 class BorrowerListView(NoPermissionMixin, PermissionRequiredMixin, ListView):
     permission_required = ["library.view_borrower"]
     model = Borrower
@@ -381,6 +413,12 @@ class BorrowerAdd(NoPermissionMixin, PermissionRequiredMixin, CreateView):
     raise_exception = True
     success_message = "Borrower created successfully."
     success_url = reverse_lazy("library:borrowers")
+
+    # TODO ADD TO MODEL FORM TO OVERRIDE QUERYSET
+    # def get_queryset(self):
+    #     borrower_id_qs = Borrower.objects.all().values("user__id")
+    #     user_qs = CustomUser.objects.exclude(id__in=borrower_id_qs)
+    #     raise Exception(user_qs)
 
 
 class BorrowerEdit(
@@ -438,3 +476,19 @@ class BorrowerDelete(
         self.object.save()
         messages.success(self.request, self.success_message)
         return redirect(self.success_url)
+
+
+class ItemVisibility(NoPermissionMixin, PermissionRequiredMixin, View):
+    permission_required = ["library.change_book", "library.change_videogame"]
+
+    def get(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
+        pm = get_parent_model(pk)
+        if pm:
+            model = apps.get_model("library", pm)
+            item = model.objects.get(id=pk)
+            item.visible = not (item.visible)
+            item.save()
+            return redirect(f"library:{str(pm).lower()}s")
+        else:
+            raise Http404("Not Found")
