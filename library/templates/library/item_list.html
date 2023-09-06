@@ -355,9 +355,6 @@
 {% block contentclass %}container px-3 my-4{% endblock contentclass%}
 
 {% block content %}
-{{object_list.first}}
-
-
 <div class="library-item-header">
     <h3 class="fw-bolder">{% if series_list %}Series{%else%}{{object_list.first.get_item_type_display}}s{%endif%} List
     </h3>

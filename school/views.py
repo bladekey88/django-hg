@@ -348,7 +348,7 @@ class CourseDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     permission_denied_message = "Access Forbidden"
     model = BasicCourse
     template_name = "school/course_delete.html"
-    success_url = reverse_lazy("school:courses_view")
+    success_url = reverse_lazy("school:courses_view_all")
 
     # def get(self, request, slug, obj=None):
     #     raise Exception(request.user.get_all_permissions())

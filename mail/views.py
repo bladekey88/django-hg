@@ -13,9 +13,7 @@ from django.contrib.auth.mixins import (
 
 class MainView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
-        return any(
-            [self.request.user.is_superuser, self.request.user.uid == "a.weasley"]
-        )
+        return any([self.request.user.is_superuser, self.request.user.is_staff])
 
     def get(self, request):
         subject = "Test Email"
