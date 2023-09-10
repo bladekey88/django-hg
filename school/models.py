@@ -49,10 +49,7 @@ class BasicCourse(models.Model):
     description = models.TextField(
         "Description", max_length=2500, null=True, blank=True
     )
-    category = models.ForeignKey(
-        CourseCategory,
-        on_delete=models.PROTECT,
-    )
+    category = models.ForeignKey(CourseCategory, on_delete=models.PROTECT, default=15)
     course_code = models.CharField("Course Code", max_length=10, unique=True)
 
     class CourseType(models.TextChoices):
@@ -269,23 +266,25 @@ class BasicClass(models.Model):
     )
 
     def clean(self, *args, **kwargs):
-        if not self.slug:
+        if not self.slug:  #
             self.slug = self.class_code
+            return super().clean(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        self.class_code = self.get_class_code()
+        random_code = str(self.get_class_code())
+        self.class_code = random_code
         if not self.slug:
-            self.slug = self.class_code.lower()
+            self.slug = random_code
         super().save(*args, **kwargs)
 
     def get_class_code(self):
-        return f"{self.course.course_code}Y{self.school_year.get_two_year_format()}-{str(randint(1,1000)).zfill(4)}"
+        return f"{self.course.course_code}Y{self.school_year.get_two_year_format()}-{str(randint(1000,10000)).zfill(4)}"
 
     def __str__(self):
-        return f"{self.course.name} ({self.get_class_code()})"
+        return f"{self.name} ({self.class_code})"
 
     def __repr__(self):
-        return f"{self.name} - {self.get_class_code()}"
+        return f"{self.name} - {self.class_code}"
 
     def get_absolute_url(self):
         return reverse(

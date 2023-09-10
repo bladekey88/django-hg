@@ -480,6 +480,7 @@ class BorrowerDelete(
 
 class ItemVisibility(NoPermissionMixin, PermissionRequiredMixin, View):
     permission_required = ["library.change_book", "library.change_videogame"]
+    success_message = "Item visibility has been changed."
 
     def get(self, request, *args, **kwargs):
         pk = kwargs["pk"]
@@ -489,6 +490,7 @@ class ItemVisibility(NoPermissionMixin, PermissionRequiredMixin, View):
             item = model.objects.get(id=pk)
             item.visible = not (item.visible)
             item.save()
+            messages.success(self.request, self.success_message)
             return redirect(f"library:{str(pm).lower()}s")
         else:
             raise Http404("Not Found")

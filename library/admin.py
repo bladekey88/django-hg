@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth.models import Permission
 from .models import (
     Author,
     Genre,
@@ -9,6 +10,23 @@ from .models import (
     Language,
     BookInstance,
 )
+
+
+class PermissionAdmin(admin.ModelAdmin):
+    @admin.display(description="App")
+    def display_app(self, obj):
+        return obj.content_type.app_label
+
+    @admin.display(description="Model")
+    def display_model(self, obj):
+        return obj.content_type.model
+
+    model = Permission
+    list_filter = ["content_type__app_label", "content_type__model"]
+    list_display = ["display_app", "display_model", "codename", "name"]
+
+
+admin.site.register(Permission, PermissionAdmin)
 
 
 # Custom Actions

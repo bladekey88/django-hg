@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load crispy_forms_tags %}
 {% block title %}Add Course{% endblock title %}
 {% block breadcrumbs_current_page %}
 <li>
@@ -72,12 +73,12 @@
 {% block content %}
 <div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
     <h3>Add Course</h3>
-    <a class=" text-decoration-none" href="{% url 'school:courses_view' %}">Back to Course List</a>
+    <a class=" text-decoration-none" href="{% url 'school:courses_view_all' %}">Back to Course List</a>
 </div>
 <div class="add-form">
     <form action="" method="post">
         {% csrf_token %}
-        {{form.as_div}}
+        {{form|crispy}}
         <input type="submit" value="Submit">
     </form>
 </div>

@@ -41,7 +41,15 @@
         border: 2px solid rgb(95, 97, 110);
         border-radius: .5em;
         margin: 10px 10px;
-        flex: 1;
+        flex: 3;
+    }
+
+    @media (max-width:992px) {
+        .master-container {
+            display: block;
+            text-align: center;
+        }
+
     }
 </style>
 {% endblock pagestyle %}
@@ -50,10 +58,10 @@
 
 <div class="d-flex pb-1 mb-3 justify-content-between border-bottom border-1 border-dark align-items-center">
     <h3 class="pt-1">
-        <span class="fw-bold">Student</span> | {{user.full_name}}
+        <span class="fw-bold">{{user_type|title}}</span> | {{user.full_name}}
     </h3>
-    <a class=" text-decoration-none" href="#">
-        Back to Students
+    <a class="text-decoration-none" href="#">
+        Back to {{user_type|title}}
     </a>
 </div>
 {% if not user.is_active %}
@@ -66,7 +74,7 @@
 {% endif %}
 {% endif %}
 <div class="master-container 1">
-    <div>
+    <div class="2">
         <h3 class="h3">Details</h3>
         <div class="border-1 border-bottom">
             <label for="title">Title</label>
@@ -109,9 +117,10 @@
             </h5>
         </div>
     </div>
+    {% if user_type == "student" %}
     <div class="2">
         <h3 class="h4">Student Information</h3>
-        <div class="border-1 border-bottom">
+        <div>
             <label for="schoolHouse">House</label>
             <h5 id="schoolHouse">
                 {{user.student.get_house_display}}
@@ -125,6 +134,34 @@
                 {{user.student.prefect}}
             </h5>
         </div>
+        {% if user.student.basicclass_set.all %}
+        <div class="3">
+            <h5 class="fw-bolder mt-4 border-1 border-bottom">
+                Class{{user.student.basicclass_set.count|pluralize:"es"}}
+            </h5>
+            <div class="class-info">
+                {% for class in user.student.basicclass_set.all %}
+                <label for="className">Name</label>
+                <h5 id="className">
+                    <a class="text-decoration-none"
+                        href="{% url 'school:class_detail' class.course.slug class.slug  %}">
+                        {{class.name}}
+                    </a>
+                </h5>
+                <label for="classCode">Class Code</label>
+                <h5 id="classCode">{{class.class_code}}</h5>
+                <label for="classTeacher">Teacher{{class.teacher.all.count|pluralize}}</label>
+                <h5 id="classTeacher">
+                    <ul class="list-unstyled px-0 mx-0">
+                        {% for t in class.teacher.all %}
+                        <li> {{t.user.full_common_name}}</li>
+                        {%endfor%}
+                    </ul>
+                </h5>
+                {% endfor %}
+            </div>
+        </div>
+        {%endif%}
         {% if user.student.quidditchplayer %}
         <div class="py-1">
             <label for="quidditchPlayer">Quidditch Player</label>
@@ -146,6 +183,7 @@
         </div>
         {% endif %}
     </div>
+    {% endif %}
     {% if user.student.children_of.all or siblings %}
     <div class="2">
         <h3>Family Information</h3>
@@ -180,6 +218,42 @@
             </div>
             {% endif %}
         </div>
+    </div>
+    {% endif %}
+
+    {% if user_type == "staff" %}
+    <div class="2">
+        <h3 class="h4">Staff Information</h3>
+        <div class="border-1 border-bottom">
+            <label for="isHeadOfHouse">Head Of House</label>
+            <h5 id="isHeadOfHouse">
+                {{user.staff.is_head_of_house}}
+            </h5>
+            <label for="staffType">Staff Type</label>
+            <h5 id="staffType">
+                {{user.staff.get_staff_type_display}}
+            </h5>
+        </div>
+        {% if user.staff.basiccourse_set.all %}
+
+        <div class="py-1">
+            <h5 class="fw-bolder mt-4 border-1 border-bottom">Courses Owned</h5>
+            {% for course in user.staff.basiccourse_set.all %}
+            <div>
+                <label for="courseName">Name</label>
+                <h5 id="courseName">
+                    <a class="text-decoration-none" href="{% url 'school:course_detail' course.slug  %}">
+                        {{course.name}}
+                    </a>
+                </h5>
+                <label for="courseCode">Course Code</label>
+                <h5 id="courseCode">{{course.course_code}}</h5>
+                <label for="courseInfo">Course Information</label>
+                <h5 id="courseInfo">{{course.get_course_type_display}}</h5>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 

@@ -155,7 +155,8 @@
             {% for classes in object.basicclass_set.all %}
             <tr>
                 <td>
-                    {% if request.user.is_school_staff %}
+
+                    {% if request.user.is_school_staff or classes in request.user.student.basicclass_set.all %}
                     <a href="{% url 'school:class_detail' object.course_code classes.slug %}">
                         {{classes.name}}
                     </a>
@@ -193,6 +194,19 @@
                 </a>
             </div>
             <div class="course-management-course-modify d-flex align-items-center gap-3">
+                {% if perms.school.change_basiccourse or request.user == object.owner.user %}
+                {% if request.user == object.owner.user %}
+                <a type="button" class="btn border-secondary btn-primary text-decoration-none m-0 border-2 fw-bolder"
+                    href="{% url 'school:course_ownership_change' object.slug %}" role="button">
+                    Remove Ownership
+                </a>
+                {% elif not object.owner %}
+                <a type="button" class="btn border-secondary btn-primary text-decoration-none m-0 border-2 fw-bolder"
+                    href="{% url 'school:course_ownership_change' object.slug %}" role="button">
+                    Claim Ownership
+                </a>
+                {% endif %}
+                {% endif %}
                 {% if perms.school.change_basiccourse or request.user == object.owner.user %}
                 <a type="button" class="btn border-secondary btn-primary text-decoration-none m-0 border-2 fw-bolder"
                     href="{% url 'school:course_edit' object.slug %}" role="button">

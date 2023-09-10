@@ -133,6 +133,7 @@ class Staff(models.Model):
     )
 
     is_head_of_house = models.BooleanField("Is Head of House", default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
 
     def clean(self, *args, **kwargs):
         USER_IS_STUDENT_ERROR = f"""

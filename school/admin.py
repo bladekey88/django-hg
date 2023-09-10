@@ -46,8 +46,8 @@ class BasicCourseAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if not request.user.is_superuser:
-            raise Exception(request)
-        return qs.filter(author=request.user)
+            return qs.filter(owner=request.user.staff)
+        return qs
 
     def has_change_permission(self, request, obj=None):
         if obj is not None:
@@ -125,7 +125,7 @@ class BasicClassAdmin(admin.ModelAdmin):
         "name",
         "class_code",
     ]
-    list_filter = ["teacher"]
+    list_filter = ["course__category", "teacher"]
     ordering = ["name"]
 
 

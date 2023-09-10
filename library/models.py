@@ -281,6 +281,12 @@ class LibraryItem(models.Model):
         verbose_name = "Library Item"
         verbose_name_plural = "Library Items"
         abstract = True
+        default_permissions = [
+            ("add_item", "Can Add Item"),
+            ("change_item", "Can Change Item"),
+            ("view_item", "Can View Item"),
+            ("delete_item", "Can Delete Item"),
+        ]
 
     class ItemType(models.TextChoices):
         BOOK = ("B", "Book")
@@ -565,3 +571,11 @@ class BookInstance(models.Model):
         if not self.publish_date:
             self.publish_date = self.book.publish_date
         super().save(*args, **kwargs)
+
+
+class DVD(LibraryItem):
+    class Meta:
+        verbose_name = "DVD"
+        verbose_name_plural = "DVDs"
+        permissions = LibraryItem._meta.default_permissions
+        default_permissions = []

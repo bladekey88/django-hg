@@ -40,11 +40,8 @@ class BasicCourseInline(admin.TabularInline):
     extra = 0
     can_delete = False
     empty_value_display = "N/A"
-    readonly_fields = [
-        "course_code",
-        "course_type",
-        "required",
-    ]
+    readonly_fields = ["name", "course_code", "course_type", "required", "category"]
+    fields = readonly_fields
 
 
 class QuidditchInline(admin.TabularInline):
@@ -513,6 +510,7 @@ class StaffAdmin(admin.ModelAdmin):
         "get_full_name",
         "staff_type",
         "is_head_of_house",
+        "date_created",
     ]
     list_filter = [
         "staff_type",

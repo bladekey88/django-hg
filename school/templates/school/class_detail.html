@@ -156,7 +156,7 @@
             {% for enrolment in object.enrolment_set.all %}
             <tr>
                 <td>
-                    <a target="_blank" href="{% url 'account:profile_other_user' enrolment.student.user.uid %}">
+                    <a href="{% url 'school:student_profile' enrolment.student.user.uid %}">
                         {{enrolment.student.user.full_name}} ({{enrolment.student.user.uid}})
                     </a>
                 </td>
@@ -178,7 +178,8 @@
             {% endif %}
         </tbody>
     </table>
-    <div class="course-management">
+    {% if request.user.is_school_staff or request.user.is_superuser %}
+    <div class="class-management">
         <h5 class="mb-3">Class Management</h5>
         <div class="d-flex align-items-center gap-3">
             <a type="button" class="btn  btn-outline-primary text-decoration-none m-0 border-2 fw-bolder"
@@ -197,6 +198,7 @@
             {% endif %}
         </div>
     </div>
+    {% endif %}
 </div>
 
 

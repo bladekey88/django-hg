@@ -25,8 +25,13 @@ urlpatterns = [
     # Staff Section
     path(
         "staff/",
-        views.Staff.as_view(),
+        views.StaffIndexView.as_view(),
         name="staff_main",
+    ),
+    path(
+        "staff/staff/<staff>/",
+        views.StaffProfileView.as_view(),
+        name="staff_profile",
     ),
     path(
         "staff/view-students/",
@@ -71,6 +76,11 @@ urlpatterns = [
         "staff/courses/<slug:slug>/edit/",
         views.CourseEdit.as_view(),
         name="course_edit",
+    ),
+    path(
+        "school/courses/<slug:slug>/ownership/",
+        views.CourseOwnershipChangeView.as_view(),
+        name="course_ownership_change",
     ),
     path(
         "staff/courses/<slug:slug>/delete/",

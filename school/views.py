@@ -10,7 +10,7 @@ from django.http import HttpResponse, Http404
 from django.views import View
 from django.views.generic import ListView, DetailView, TemplateView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
-from users.models import Parent, CustomUser, Student
+from users.models import Parent, CustomUser, Student, Staff
 from school.models import BasicCourse, BasicClass, SchoolYear, CourseCategory
 from django.urls import reverse_lazy
 from school.forms import (
@@ -47,6 +47,7 @@ class StudentProfileView(LoginRequiredMixin, PermissionRequiredMixin, View):
             if cu.is_student():
                 context = {}
                 context["user"] = cu
+                context["user_type"] = "student"
                 context["siblings"] = self.get_siblings(cu)
                 return render(request, self.template_name, context=context)
             else:
@@ -82,7 +83,7 @@ class StudentHouses(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
 
 
 # Staff Section
-class Staff(LoginRequiredMixin, View):
+class StaffIndexView(LoginRequiredMixin, View):
     template_name = "users/staff_landing.html"
 
     def get(self, request):
@@ -90,6 +91,25 @@ class Staff(LoginRequiredMixin, View):
             return redirect("school:home")
         else:
             return render(request, self.template_name)
+
+
+class StaffProfileView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    template_name = "users/profile_beta.html"
+    permission_required = ["users.view_staff"]
+    model = Staff
+
+    def get(self, request, staff):
+        try:
+            cu = CustomUser.objects.get(uid=staff)
+            if cu.is_school_staff():
+                context = {}
+                context["user"] = cu
+                context["user_type"] = "staff"
+                return render(request, self.template_name, context=context)
+            else:
+                raise Http404("Staff Not Found")
+        except Exception as e:
+            raise Http404(f"Staff Not Found: {e}")
 
 
 class StaffViewStudent(View):
@@ -312,8 +332,11 @@ class CourseAdd(PermissionRequiredMixin, CreateView):
     success_message = "Course created successfully."
 
     def form_valid(self, form):
-        if not form.instance.owner:
-            form.instance.owner = self.request.user
+        try:
+            if not form.instance.owner:
+                form.instance.owner = self.request.user.staff
+        except Exception:
+            form.instance.owner = Staff.objects.filter(is_head_of_house=True).first()
         return super().form_valid(form)
 
 
@@ -354,6 +377,30 @@ class CourseDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     #     raise Exception(request.user.get_all_permissions())
 
 
+class CourseOwnershipChangeView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = ["school.change_basiccourse"]
+    permission_denied_message = "Access Forbidden"
+    model = BasicCourse
+    success_url = reverse_lazy("school:courses_view_all")
+
+    def get(self, request, *args, **kwargs):
+        course = self.model.objects.get(slug=kwargs["slug"])
+        if not course.owner:
+            if (
+                request.user.staff.staff_type == Staff.StaffType.ACADEMIC
+                or request.user.staff.is_head_of_house
+                or request.user.is_superuser
+            ):
+                course.owner = request.user.staff
+                course.save()
+
+        else:
+            if course.owner == request.user.staff:
+                course.owner = None
+                course.save()
+        return redirect("school:course_detail", kwargs["slug"])
+
+
 # Class Section
 class ClassesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = BasicClass
@@ -368,6 +415,17 @@ class ClassView(PermissionRequiredMixin, DetailView):
     model = BasicClass
     template_name = "school/class_detail.html"
     slug_url_kwarg = "class_slug"
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        context["object"] = BasicClass.objects.get(slug=kwargs["class_slug"])
+        obj = context["object"]
+
+        if request.user.is_student():
+            if obj not in request.user.student.basicclass_set.all():
+                return redirect("school:course_detail", obj.course.slug, permanent=True)
+
+        return render(request, template_name=self.template_name, context=context)
 
 
 class ClassAdd(PermissionRequiredMixin, CreateView):
