@@ -439,6 +439,14 @@ class VideoGame(LibraryItem):
         """Returns the URL to access a detail record for this videogame."""
         return reverse("library:videogame-detail", args=[str(self.id)])
 
+    def get_count_child_instance(self):
+        return self.vginstance_set.all().count()
+
+    def get_available_child_instance(self):
+        return self.vginstance_set.filter(
+            status=VGInstance.VGItemStatus.AVAILABLE
+        ).count()
+
     class Meta:
         verbose_name = "Video Game"
         verbose_name_plural = "Video Games"
@@ -570,6 +578,74 @@ class BookInstance(models.Model):
             self.isbn = self.book.isbn
         if not self.publish_date:
             self.publish_date = self.book.publish_date
+        super().save(*args, **kwargs)
+
+
+class VGInstance(models.Model):
+    class Meta:
+        verbose_name = "Video Game Instance"
+        verbose_name_plural = "Video Game Instances"
+
+    instance_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        help_text="Unique ID for this particular videogame instance across whole library",
+        editable=False,
+    )
+    videogame = models.ForeignKey("VideoGame", on_delete=models.RESTRICT, null=True)
+
+    class VGItemStatus(models.TextChoices):
+        AVAILABLE = ("A", "Available")
+        DAMAGED = ("D", "Damaged")
+        INTERNAL = ("I", "Internal")
+        LOST = ("L", "Lost")
+        ON_HOLD = ("H", "On Hold")
+        ON_LOAN = ("O", "On Loan")
+        MISSING = ("M", "Missing")
+        PROCESSING = ("P", "Processing")
+        UNAVAILABLE = ("U", "Unavailable")
+
+    status = models.TextField(
+        "Status",
+        choices=VGItemStatus.choices,
+        default=VGItemStatus.AVAILABLE,
+        max_length=1,
+    )
+
+    class VGMedium(models.TextChoices):
+        CARTRIDGE = ("C", "Cartridge")
+        DISC = ("Disc", "Disc")
+        DOWNLOADKEY = ("K", "Download Key")
+
+    medium_type = models.TextField(
+        "Medium Type",
+        choices=VGMedium.choices,
+        max_length=4,
+    )
+
+    publish_date = models.DateField(
+        "Published On",
+        blank=True,
+        null=True,
+    )
+
+    item_language = models.ManyToManyField(
+        Language,
+        related_name="vg_copy_language",
+    )
+
+    platform = models.CharField(
+        "Platform",
+        max_length=10,
+        choices=VideoGame.SystemPlatform.choices,
+    )
+
+    def __str__(self):
+        return f"{self.videogame.title}"
+
+    def save(self, *args, **kwargs):
+        if not self.publish_date:
+            self.publish_date = self.videogame.publish_date
         super().save(*args, **kwargs)
 
 

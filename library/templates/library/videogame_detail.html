@@ -87,20 +87,26 @@
 
 
 
-<div style="margin-left:20px;margin-top:20px">
-    <h4>Copies</h4>
+{% if videogame.vginstance_set.all %}
+<div style="margin-left:20px;margin-top:20px" class="bg-light">
+    <h3 class="fw-bolder ps-2 m-0 pt-3">Copies</h3>
+    {% for copy in videogame.vginstance_set.all %}
+    <div class="p-0 m-0 border-top border-secondary border-1 my-3 pt-1 px-5">
+        <p
+            class="fw-bolder p-0 m-0 {% if copy.status == 'A' %}text-success{% elif copy.status == 'L' %}text-danger{% else %}text-warning{% endif %}">
+            {{ copy.get_status_display }}
+        </p>
+        <p><strong>Type:</strong> {{copy.get_medium_type_display}}
 
-    {% for copy in book.bookinstance_set.all %}
-    <hr />
-    <p
-        class="{% if copy.status == 'a' %}text-success{% elif copy.status == 'm' %}text-danger{% else %}text-warning{% endif %}">
-        {{ copy.get_status_display }}
-    </p>
-    {% if copy.status != 'a' %}
-    <p><strong>Due to be returned:</strong> {{ copy.due_back }}</p>
-    {% endif %}
-    <p><strong>Imprint:</strong> {{ copy.imprint }}</p>
-    <p class="text-muted"><strong>Id:</strong> {{ copy.id }}</p>
+            {% if copy.status != 'A' %}
+        <p><strong>Due to be returned:</strong> {{ copy.due_back }}</p>
+        {% endif %}
+        <p><strong>Platform:</strong> {{ copy.platform}}</p>
+        <p><strong>Language:</strong> {{ copy.item_language.all|join:", " }}</p>
+        <p><strong>Published:</strong> {{copy.publish_date}}</p>
+        <p class="text-muted"><strong>ID:</strong> {{ copy.instance_id }}</p>
+    </div>
     {% endfor %}
 </div>
+{% endif %}
 {% endblock %}

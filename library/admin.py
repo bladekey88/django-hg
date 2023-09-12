@@ -9,6 +9,7 @@ from .models import (
     Borrower,
     Language,
     BookInstance,
+    VGInstance,
 )
 
 
@@ -166,6 +167,56 @@ class VideoGameAdmin(admin.ModelAdmin):
     )
 
 
+class VGInstanceAdmin(admin.ModelAdmin):
+    model = VGInstance
+    filter_horizontal = ["item_language"]
+
+    @admin.display(description="Publisher(s)")
+    def display_author(self, obj):
+        return ", ".join(
+            author.display_name
+            for author in obj.videogame.author.all().order_by("last_name")[:3]
+        )
+
+    @admin.display(description="Developer(s)")
+    def display_developer(self, obj):
+        return ", ".join(
+            author.display_name
+            for author in obj.videogame.developer.all().order_by("last_name")[:3]
+        )
+
+    @admin.display(description="Genre(s)")
+    def display_genre(self, obj):
+        return ", ".join(
+            genre.name for genre in obj.videogame.genre.all().order_by("name")[:3]
+        )
+
+    @admin.display(description="Language")
+    def display_language(self, obj):
+        return ", ".join(lang.name for lang in obj.item_language.all())
+
+    list_display = [
+        "videogame",
+        "platform",
+        "medium_type",
+        "status",
+        "display_developer",
+        "display_genre",
+        "display_language",
+        "instance_id",
+    ]
+
+    list_filter = [
+        "medium_type",
+        "platform",
+        "status",
+        "publish_date",
+        "item_language",
+    ]
+
+    search_fields = ["videogame__title", "videogame__developer__last_name"]
+
+
 class SeriesAdmin(admin.ModelAdmin):
     model = Series
     inlines = [BookInline]
@@ -301,3 +352,4 @@ admin.site.register(Language, LanguageAdmin)
 admin.site.register(Series, SeriesAdmin)
 admin.site.register(VideoGame, VideoGameAdmin)
 admin.site.register(BookInstance, BookInstanceAdmin)
+admin.site.register(VGInstance, VGInstanceAdmin)

@@ -15,7 +15,7 @@ from .models import Book, VideoGame, Author, Series, Borrower
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.models import Group
 from django.urls import reverse_lazy
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 from users.models import CustomUser
 
@@ -30,6 +30,10 @@ def get_parent_model(pk):
         except ObjectDoesNotExist:
             pass
     return item.__class__.__name__ if item else False
+
+
+def is_ajax(request):
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
 
 class LibraryHomeView(ListView):
@@ -480,7 +484,7 @@ class BorrowerDelete(
 
 class ItemVisibility(NoPermissionMixin, PermissionRequiredMixin, View):
     permission_required = ["library.change_book", "library.change_videogame"]
-    success_message = "Item visibility has been changed."
+    success_message = "Visibility has been changed"
 
     def get(self, request, *args, **kwargs):
         pk = kwargs["pk"]
@@ -488,9 +492,17 @@ class ItemVisibility(NoPermissionMixin, PermissionRequiredMixin, View):
         if pm:
             model = apps.get_model("library", pm)
             item = model.objects.get(id=pk)
-            item.visible = not (item.visible)
+            item.visible = not (item.visible)  # type: ignore
             item.save()
-            messages.success(self.request, self.success_message)
-            return redirect(f"library:{str(pm).lower()}s")
+
+            if is_ajax(request):
+                data = {}
+                data["visible"] = item.visible  # type: ignore
+                return JsonResponse(data)
+            else:
+                messages.success(
+                    self.request, f"{self.success_message} for '{item.title}'."
+                )
+                return redirect(f"library:{str(pm).lower()}s")
         else:
             raise Http404("Not Found")

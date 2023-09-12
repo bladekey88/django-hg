@@ -322,6 +322,12 @@
         }
     }
 
+    .item-invisible {
+        background-color: #d6d6d6;
+        border: 3px dashed grey;
+        transition: all 200ms;
+    }
+
     @media (min-width: 992px) {
         .item-content {
             padding-left: 3rem;
@@ -355,6 +361,21 @@
 {% block contentclass %}container px-3 my-4{% endblock contentclass%}
 
 {% block content %}
+{% if messages %}
+{% for message in messages %}
+<div class="notices mb-3">
+    <p
+        class="text-{{message.tags}} alert alert-{{message.tags}} p-0 rounded-0 border-0 border-3 border-top border-bottom border-{{message.tags}}">
+        <strong class="ms-2">
+            {% if message.tags == "success"%}
+            <i class="bi bi-check-circle"></i>
+            {{ message }}
+            {% endif %}
+        </strong>
+    </p>
+</div>
+{% endfor %}
+{% endif %}
 <div class="library-item-header">
     <h3 class="fw-bolder">{% if series_list %}Series{%else%}{{object_list.first.get_item_type_display}}s{%endif%} List
     </h3>
@@ -402,9 +423,8 @@
             <div class="summary-button">List View</div>
         </div>
         {% for object in object_list %}
-        <div class="records">
-            <div class="record-card" {% if not object.visible and object.item_type %}
-                style="border: 3px dashed grey; background-color: #d6d6d6;" {% endif %}>
+        <div class="records" id="{{object.id}}">
+            <div class="record-card {% if not object.visible and object.item_type %}item-invisible{% endif %}">
                 <div class="record-card-row">
                     <div class="record-image">
                         <div class="image-header">
@@ -418,7 +438,7 @@
                     </div>
                     <div class="record-card-details">
                         <div class="detail-header">
-                            <div class="detail-header-message">OUT OF STOCK</div>
+                            <div class="detail-header-message fw-bolder text-danger"></div>
                             <div class="detail-header-buttons h5">
                                 {% if perms.library.change_book or perms.library.change_videogame %}
                                 {% if object.visible %}
@@ -471,7 +491,8 @@
                                         role="button">
                                         Edit Item
                                     </a>
-                                    <a class="btn btn-outline-primary"
+                                    <a class="btn btn-outline-primary change-item-visible"
+                                        id="item-visible-{{object.id}}"
                                         href="{% url 'library:item-visibility' object.pk%}" role="button">
                                         Change Item Visibility
                                     </a>
@@ -521,6 +542,27 @@
                     $(this).one('load', imageLoaded);
                 }
             });
+        });
+    </script>
+    <script>
+        $(".change-item-visible").on('click', function (e) {
+            e.preventDefault();
+            let current_item = $(this)
+            let item_parent = $(this).closest(".records")
+            let item_id = item_parent[0].id
+            $.get('/library/items/change-visibility/' + item_id,
+                function (response) {
+                    if (response["visible"] == true) {
+                        item_parent.find(".bi-eye-slash").addClass("bi-eye text-success").removeClass("bi-eye-slash text-warning")
+                        current_item.closest(".record-card").removeClass("item-invisible")
+                        item_parent.find(".detail-header-message").html("Item VISIBLE to standard users")
+                    }
+                    else {
+                        item_parent.find(".bi-eye").removeClass("bi-eye text-success").addClass("bi-eye-slash text-warning")
+                        current_item.closest(".record-card").addClass("item-invisible")
+                        item_parent.find(".detail-header-message").html("Item  INVISIBLE to standard users")
+                    }
+                })
         });
     </script>
     {% endblock footer %}
