@@ -1,3 +1,5 @@
+from django.contrib import messages
+from django.utils.translation import ngettext
 from django.contrib import admin
 from django.contrib.auth.models import Permission
 from .models import (
@@ -28,15 +30,6 @@ class PermissionAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Permission, PermissionAdmin)
-
-
-# Custom Actions
-@admin.action(
-    description="Activate selected Members",
-    permissions=["change"],
-)
-def activate_members(modeladmin, request, queryset):
-    queryset.update(status="A")
 
 
 class BookInstanceInline(admin.TabularInline):
@@ -71,7 +64,11 @@ class BookAdmin(admin.ModelAdmin):
         "display_genre",
         "series",
         "display_language",
+        "visible",
+        "restricted",
     ]
+
+    list_filter = ["visible", "restricted"]
 
 
 class BookInline(admin.TabularInline):
@@ -298,6 +295,24 @@ class AuthorAdmin(admin.ModelAdmin):
 
 class BorrowerAdmin(admin.ModelAdmin):
     model = Borrower
+
+    @admin.action(
+        description="Activate selected Members",
+        permissions=["change"],
+    )
+    def activate_members(self, request, queryset):
+        updated = queryset.update(status="A")
+        self.message_user(
+            request,
+            ngettext(
+                "%d borrower was activated.",
+                "%d borrowers were activated.",
+                updated,
+            )
+            % updated,
+            messages.SUCCESS,
+        )
+
     actions = [activate_members]
 
     @admin.display(description="Members")
@@ -321,7 +336,7 @@ class BorrowerAdmin(admin.ModelAdmin):
         "user__email",
     ]
     ordering = [
-        "user__first_name",
+        "user__common_name",
     ]
 
 

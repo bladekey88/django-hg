@@ -117,7 +117,7 @@
     </li>
     {% if perms.library.view_borrower %}
     <li>
-        <a href="{% url 'library:borrowers' %}">
+        <a href="{% url 'library:borrowers-search' %}">
             <strong>Members:</strong>
         </a>
         {{ num_borrowers }}

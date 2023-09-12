@@ -41,8 +41,29 @@ urlpatterns = [
     path("authors/", views.AuthorListView.as_view(), name="authors"),
     path("authors/add/", views.AuthorAdd.as_view(), name="author-add"),
     path("authors/<str:pk>/", views.AuthorDetailView.as_view(), name="author-detail"),
-    path("members/", views.BorrowerListView.as_view(), name="borrowers"),
-    path("members/add/", views.BorrowerAdd.as_view(), name="borrowers-add"),
+    path("members/", views.BorrowerSeach.as_view(), name="borrowers-search"),
+    path(
+        "members/a-z/<letter>/",
+        views.BorrowerViewAlpha.as_view(),
+        name="borrower-a-z",
+    ),
+    path(
+        "members/house/<house>/",
+        views.BorrowerViewHouse.as_view(),
+        name="borrower-house",
+    ),
+    path(
+        "members/year/<year>/",
+        views.BorrowerViewYear.as_view(),
+        name="borrower-year",
+    ),
+    path(
+        "members/staff/<stafftype>/",
+        views.BorrowerViewStaff.as_view(),
+        name="borrower-staff",
+    ),
+    path("members/all/", views.BorrowerListView.as_view(), name="borrowers-all"),
+    path("members/add/", views.BorrowerAdd.as_view(), name="borrower-add"),
     path("members/<str:pk>/", views.BorrowerDetail.as_view(), name="borrower-detail"),
     path("members/<str:pk>/edit/", views.BorrowerEdit.as_view(), name="borrower-edit"),
     path(

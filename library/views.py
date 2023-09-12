@@ -11,13 +11,14 @@ from django.views.generic import (
     UpdateView,
     View,
 )
-from .models import Book, VideoGame, Author, Series, Borrower
+from .models import Book, VideoGame, Author, Series, Borrower, BookInstance, VGInstance
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.models import Group
 from django.urls import reverse_lazy
 from django.http import Http404, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
-from users.models import CustomUser
+from users.models import Student, Staff
+from django.db.models import Q
 
 
 # Create your views here.
@@ -44,32 +45,49 @@ class LibraryHomeView(ListView):
         if request.user.groups.filter(name="Librarians"):
             num_books = Book.objects.count()
             num_vg = VideoGame.objects.count()
+            num_book_instance = BookInstance.objects.count()
+            num_vg_instance = VGInstance.objects.count()
+            num_book_instance_available = BookInstance.objects.filter(status="A")
+            num_vg_instance_available = VGInstance.objects.filter(status="A")
         else:
             num_books = Book.objects.filter(visible=True).count()
             num_vg = VideoGame.objects.filter(visible=True).count()
+            num_book_instance = BookInstance.objects.filter(book__visible=True).count()
+            num_vg_instance = VGInstance.objects.filter(videogame__visible=True).count()
+            num_book_instance_available = BookInstance.objects.filter(
+                status="A", book__visible=True
+            )
+            num_vg_instance_available = VGInstance.objects.filter(
+                status="A", videogame__visible=True
+            )
 
         num_series: int = Series.objects.count()
         num_borrowers = Borrower.objects.count()
         num_authors = Author.objects.count()
         num_visits = request.session.get("num_visits", 0)
+
+        num_instances = num_vg_instance + num_book_instance
+        num_book_instance_available = num_book_instance_available.count()
+        num_vg_instance_available = num_vg_instance_available.count()
         request.session["num_visits"] = num_visits + 1
 
         context = {
             "num_books": num_books,
             "num_vg": num_vg,
             "num_series": num_series,
-            "num_instances": 0,  # set to 0 until instances implemented
-            "num_instances_available": 0,  # set to 0 until instances
+            "num_instances": num_instances,
             "num_authors": num_authors,
             "num_borrowers": num_borrowers,
             "num_visits": num_visits,
+            "num_instances_available": num_book_instance_available
+            + num_vg_instance_available,
         }
 
         return render(request, self.template_name, context)
 
 
 class LibraryCreateAccount(LoginRequiredMixin, TemplateView):
-    template_name = "library/create-account.html"
+    template_name = "library/create_account.html"
 
     def get(self, request):
         if not request.user.is_anonymous:
@@ -317,7 +335,7 @@ class AuthorListView(NoPermissionMixin, PermissionRequiredMixin, ListView):
 class AuthorAdd(NoPermissionMixin, PermissionRequiredMixin, CreateView):
     permission_required = ["library.add_author"]
     model = Author
-    template_name = "library/author-add.html"
+    template_name = "library/author_add.html"
     fields = "__all__"
 
 
@@ -380,18 +398,167 @@ class SeriesDelete(
     success_url = reverse_lazy("library:series")
 
 
+class BorrowerSeach(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = [
+        "library.view_borrower",
+    ]
+    template_name = "library/borrower_search.html"
+
+    def generate_alphabet_index(self):
+        """
+        Iterate through student objects add increment letter dict using
+        surname. After iteration, in template check if count/len>0 render in
+        colour if exists, else disabled/greyed out if not. In the corresponding view,
+        raise 404 is letter has no surnames that begin with that letter
+        """
+        import string
+
+        letters = {letter: 0 for letter in string.ascii_lowercase}
+        qs = Borrower.objects.all()
+        for borrower in qs:
+            letters[borrower.user.full_name(False, True)[0].lower()] += 1
+        return letters
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["houses"] = Student.House
+        context["years"] = Student.Year
+        context["alpha"] = self.generate_alphabet_index()
+        context["stafftype"] = Staff.StaffType
+        return context
+
+    def post(self, request):
+        search_string = request.POST["search-member-text"].strip()
+        context = self.get_context_data()
+        if len(search_string) >= 3:
+            q1 = Q(user__first_name__icontains=search_string)
+            q2 = Q(user__common_name__icontains=search_string)
+            q3 = Q(user__last_name__icontains=search_string)
+            q4 = Q(user__idnumber=search_string)
+            members = Borrower.objects.filter(q1 | q2 | q3 | q4)
+            context["query"] = search_string
+            context["members"] = members
+        else:
+            context["query_error"] = True
+        return render(request, self.template_name, context=context)
+
+
+class BorrowerViewAlpha(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ["library.view_borrower"]
+    template_name = "library/borrower_list_a_z.html"
+    paginate_by = 10
+
+    def get(self, request, letter):
+        letter = letter.upper()
+        qs = (
+            Borrower.objects.filter(user__last_name__istartswith=letter)
+            .all()
+            .order_by("user__first_name")
+        )
+        if not qs:
+            raise Http404(f"No members with surnames that begin with {letter}")
+        context = dict()
+        context["borrowers"] = qs
+        context["letter"] = letter
+        return render(request, self.template_name, context=context)
+
+
+class BorrowerViewHouse(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ["users.view_student", "users.view_staff"]
+    template_name = "library/borrower_list_house.html"
+
+    def get(self, request, house):
+        if house.lower() in [e.name.lower() for e in Student.House]:
+            output = [e.value for e in Student.House if house.lower() == e.name.lower()]
+            qs = (
+                Borrower.objects.filter(user__student__house=output[0])
+                .all()
+                .order_by(
+                    "user__student__year",
+                    "user__first_name",
+                )
+            )
+            if qs.count() > 0:
+                context = {}
+                context["borrowers"] = qs
+                context["house"] = house
+                return render(request, self.template_name, context=context)
+            else:
+                raise Http404("House has no students.")
+
+        else:
+            raise Http404("House does not exist or is not accessible.")
+
+
+class BorrowerViewYear(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ["library.view_borrower"]
+    template_name = "library/borrower_list_year.html"
+
+    def get(self, request, year):
+        if year.lower() in [e.name.lower() for e in Student.Year]:
+            output = [e.value for e in Student.Year if year.lower() == e.name.lower()]
+            qs = (
+                Borrower.objects.filter(user__student__year=output[0])
+                .all()
+                .order_by(
+                    "user__student__house",
+                    "user__first_name",
+                )
+            )
+            if qs.count() > 0:
+                context = {}
+                context["borrowers"] = qs
+                context["year"] = year
+                return render(request, self.template_name, context=context)
+            else:
+                raise Http404("Year has no students.")
+        else:
+            raise Http404("Year does not exist or is not accessible.")
+
+
+class BorrowerViewStaff(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ["library.view_borrower"]
+    template_name = "library/borrower_list_staff.html"
+
+    def get(self, request, stafftype):
+        if stafftype.lower() in [e.name.lower() for e in Staff.StaffType]:
+            output = [
+                e.value for e in Staff.StaffType if stafftype.lower() == e.name.lower()
+            ]
+            qs = (
+                Borrower.objects.filter(user__staff__staff_type=output[0])
+                .all()
+                .order_by(
+                    "user__first_name",
+                )
+            )
+            if qs.count() > 0:
+                context = {}
+                context["borrowers"] = qs
+                context["stafftype"] = stafftype
+                return render(request, self.template_name, context=context)
+            else:
+                raise Http404("Staff type has no members")
+        else:
+            raise Http404("Staff type does not exist or is not accessible.")
+
+
 class BorrowerListView(NoPermissionMixin, PermissionRequiredMixin, ListView):
     permission_required = ["library.view_borrower"]
     model = Borrower
     paginate_by = 0
+    template_name = "library/borrower_list_all.html"
 
 
-class BorrowerActivate(NoPermissionMixin, PermissionRequiredMixin, View):
+class BorrowerActivate(
+    NoPermissionMixin, SuccessMessageMixin, PermissionRequiredMixin, View
+):
     model = Borrower
     permission_required = [
         "library.view_borrower",
         "library.change_borrower",
     ]
+    success_message = "Member activated successfully."
 
     def get(self, request, *args, **kwargs):
         borrower_id = kwargs["pk"]
@@ -402,10 +569,14 @@ class BorrowerActivate(NoPermissionMixin, PermissionRequiredMixin, View):
                 borrower.save()
         except Borrower.DoesNotExist:
             pass  # Do Nothing for now
-        return redirect("library:borrowers")
+
+        messages.success(self.request, self.success_message)
+        return redirect("library:borrower-detail", borrower_id)
 
 
-class BorrowerAdd(NoPermissionMixin, PermissionRequiredMixin, CreateView):
+class BorrowerAdd(
+    NoPermissionMixin, SuccessMessageMixin, PermissionRequiredMixin, CreateView
+):
     permission_required = ["library.add_borrower"]
     model = Borrower
     fields = [
@@ -415,8 +586,8 @@ class BorrowerAdd(NoPermissionMixin, PermissionRequiredMixin, CreateView):
     readonly_fields = ["borrow_limit"]
     template_name = "library/borrower_add.html"
     raise_exception = True
+    success_url = reverse_lazy("library:borrowers-search")
     success_message = "Borrower created successfully."
-    success_url = reverse_lazy("library:borrowers")
 
     # TODO ADD TO MODEL FORM TO OVERRIDE QUERYSET
     # def get_queryset(self):
@@ -443,7 +614,7 @@ class BorrowerEdit(
         return reverse_lazy("library:borrower-detail", kwargs={"pk": self.object.pk})
 
 
-class BorrowerDetail(NoPermissionMixin, DetailView):
+class BorrowerDetail(NoPermissionMixin, SuccessMessageMixin, DetailView):
     model = Borrower
     template_name = "library/borrower_detail.html"
 
@@ -466,8 +637,8 @@ class BorrowerDelete(
     permission_required = ["library.delete_borrower"]
     permission_denied_message = "Access Forbidden"
     model = Borrower
-    template_name = "library/borrower-delete.html"
-    success_url = reverse_lazy("library:borrowers")
+    template_name = "library/borrower_delete.html"
+    success_url = reverse_lazy("library:borrowers-search")
     success_message = (
         "Member has been marked for deletion. Deletion will occur after admin review."
     )

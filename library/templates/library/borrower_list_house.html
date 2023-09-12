@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}Hogwarts Library: Members {{house|capfirst}} {% endblock title %}
+{% block brand %}Hogwarts Library{% endblock brand %}
+{% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
+{% block pagestyle %}
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<style>
+    .text-purple {
+        /* background-color: #550f9d; */
+        color: #881af7;
+        font-weight: 800;
+
+    }
+
+    td.librarian {
+        border-right: 5px solid #881af7;
+
+    }
+
+    .library-member-header {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        align-items: center;
+    }
+
+    .member-list {
+        display: flex;
+        flex-wrap: wrap;
+        border-top: 1px solid #e6e7e8;
+        padding-top: 1rem;
+    }
+
+    .load-table {
+        display: none;
+    }
+
+    .dataTables_wrapper {
+        flex-basis: 0;
+        flex-grow: 1;
+        max-width: 100%;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    table {
+        border-collapse: collapse;
+        margin: 25px 0;
+        font-size: 0.9em;
+        font-family: sans-serif;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+        max-width: 100%;
+        table-layout: fixed;
+    }
+
+    thead tr {
+        background-color: #009879;
+        color: #ffffff;
+        text-align: left;
+    }
+
+    td,
+    th,
+    thead {
+        padding: 0.75rem 1rem;
+        text-align: center !important;
+        overflow: hidden;
+    }
+
+    tbody tr {
+        border-bottom: 1px solid #dddddd;
+    }
+
+    tbody tr:nth-of-type(even) {
+        background-color: #f3f3f3;
+    }
+
+    tbody tr:last-of-type {
+        border-bottom: 2px solid #009879;
+    }
+
+    tbody>tr:hover {
+        color: #009879;
+        font-weight: bolder;
+        background-color: rgb(250, 250, 78, 0.6) !important;
+    }
+
+    td {
+        padding: 1rem 3rem 1rem;
+    }
+
+    td>a {
+        text-decoration: none;
+    }
+
+    .user-pending::after {
+        content: "!";
+        color: red;
+        font-weight: 800;
+        vertical-align: super;
+        font-size: smaller;
+    }
+
+    .status-pending {
+        color: #17a2b8;
+        border-color: #0062cc;
+        font-weight: 600;
+    }
+
+    .status-pending:hover {
+        color: #138496;
+    }
+
+    .status-active {
+        color: #28a745;
+        font-weight: 800;
+    }
+
+    .status-active:hover {
+        color: #1e7e34;
+
+    }
+
+    .status-suspended {
+        color: #dc3545;
+        font-weight: 800;
+    }
+
+    .status-suspended:hover {
+        color: #c82333;
+    }
+
+    .status-inactive,
+    .status-inactive:hover {
+        color: #545b62;
+        font-style: italic;
+    }
+</style>
+
+{% endblock pagestyle %}
+{% block breadcrumbs_current_page %}
+<li>
+    <a href="{% url 'library:index' %}" class="breadcrumbs">
+        <span property="name">Library</span>
+    </a>
+</li>
+<li>
+    <a href="{% url 'library:borrowers-search' %}" class="breadcrumbs">
+        <span property="name">Find Member</span>
+    </a>
+</li>
+<li>
+    <a href="{{request.url}}" class="breadcrumbs-current-page">
+        <span class="text-secondary" property="name">House: {{house|capfirst}}</span>
+    </a>
+</li>
+{% endblock breadcrumbs_current_page %}
+{% block contentclass %}container px-3 my-4{% endblock contentclass%}
+{% block content %}
+{% if messages %}
+{% for message in messages %}
+<div class="notices mb-3">
+    <p
+        class="text-{{message.tags}} alert alert-{{message.tags}} p-0 rounded-0 border-0 border-3 border-top border-bottom border-{{message.tags}}">
+        <strong class="ms-2">
+            {% if message.tags == "success"%}
+            <i class="bi bi-check-circle"></i>
+            {{ message }}
+            {% endif %}
+        </strong>
+    </p>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="library-member-header">
+    <h3 class="fw-bolder">Members List | House: {{house|capfirst}}
+    </h3>
+</div>
+<div class="member-list">
+    {% if borrowers %}
+    <table id="member-table" class="table load-table table-responsive">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th class="d-none d-md-table-cell">Last Name</th>
+                <th class="d-none d-md-table-cell">First Name</th>
+                <th>Items Checked Out</th>
+                <th>Items Reserved</th>
+                <th>Status</th>
+                <th>Account</th>
+            </tr>
+        </thead>
+        {% for borrower in borrowers %}
+        <tr>
+            <td style="width:15%" class="{% if borrower.status == 'P' %}user-pending {%endif %}">
+                <a href="{% url 'library:borrower-detail' borrower.id %}">
+                    {{borrower.user.full_common_name}}
+                </a>
+            </td>
+            <td class="d-none d-md-table-cell">{{borrower.user.last_name}}</td>
+            <td class="d-none d-md-table-cell">{{borrower.user.first_name}}</td>
+            <td>0</td>
+            <td>0</td>
+            <td class="text-nowrap">
+                <span class="status-{{borrower.get_status_display|lower}} ">
+                    {{borrower.get_status_display}}
+                </span>
+                {% if borrower.status == "P" %} |
+                <a href="{% url 'library:borrowers-activate' borrower.id %}">
+                    <span class="">Activate</span>
+                </a>
+                {% endif %}
+            </td>
+            {% if borrower.is_librarian %}
+            <td class="librarian">
+                <span class="text-purple fw-bold p-2">Librarian</span>
+                {% else %}
+            <td>
+                Member
+                {% endif%}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% block pagination %}
+    {% if is_paginated %}
+    <div class="pagination">
+        <span class="page-links">
+            {% if page_obj.has_previous %}
+            <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}" class="pe-2">Previous</a>
+            {% endif %}
+            <span class=" page-current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+            {% if page_obj.has_next %}
+            <a href="{{ request.path }}?page={{ page_obj.next_page_number }}" class="ps-2">Next</a>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+    {% endblock pagination %}
+
+    {% else %}
+    <p>There are no members.</p>
+    {% endif %}
+</div>
+{% endblock content %}
+{% block footer %}
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function () {
+        let table = new DataTable(
+            "#member-table",
+            {
+                stateSave: false,
+                paging: true,
+                ordering: true,
+                order: [[5, "desc"], [0, "asc"]],
+                pageLength: 10,
+                lengthMenu: [[5, 10, 25], [5, 10, 25]],
+            });
+        $("#member-table").removeClass("load-table");
+    })
+</script>
+
+{% endblock footer %}

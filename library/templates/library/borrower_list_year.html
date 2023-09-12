@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Hogwarts Library: Members{% endblock title %}
+{% block title %}Hogwarts Library: Members - {{year|capfirst}} Year {% endblock title %}
 {% block brand %}Hogwarts Library{% endblock brand %}
 {% block brandurl %}{% url "library:index" %}{% endblock brandurl %}
 {% block pagestyle %}
@@ -146,14 +146,19 @@
     </a>
 </li>
 <li>
+    <a href="{% url 'library:borrowers-search' %}" class="breadcrumbs">
+        <span property="name">Find Member</span>
+    </a>
+</li>
+<li>
     <a href="{{request.url}}" class="breadcrumbs-current-page">
-        <span class="text-secondary" property="name">Members</span>
+        <span class="text-secondary" property="name">{{year|capfirst}} Year</span>
     </a>
 </li>
 {% endblock breadcrumbs_current_page %}
 {% block contentclass %}container px-3 my-4{% endblock contentclass%}
 {% block content %}
-{% if messages %} asdf
+{% if messages %}
 {% for message in messages %}
 <div class="notices mb-3">
     <p
@@ -170,17 +175,11 @@
 {% endif %}
 
 <div class="library-member-header">
-    <h3 class="fw-bolder">Members List
+    <h3 class="fw-bolder">Members List | {{year|capfirst}} Year
     </h3>
-    {% if perms.library.add_borrower %}
-    <a class="btn btn-outline-primary rounded-0 add-member-button" href="{{request.url}}add">
-        Add Member
-    </a>
-    {% endif %}
 </div>
 <div class="member-list">
-    {% if borrower_list %}
-
+    {% if borrowers %}
     <table id="member-table" class="table load-table table-responsive">
         <thead>
             <tr>
@@ -193,7 +192,7 @@
                 <th>Account</th>
             </tr>
         </thead>
-        {% for borrower in borrower_list %}
+        {% for borrower in borrowers %}
         <tr>
             <td style="width:15%" class="{% if borrower.status == 'P' %}user-pending {%endif %}">
                 <a href="{% url 'library:borrower-detail' borrower.id %}">
