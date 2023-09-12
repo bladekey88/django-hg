@@ -14,6 +14,7 @@ from school.models import BasicCourse, BasicClass
 class StudentInline(admin.TabularInline):
     model = Student
     verbose_name_plural = "Student"
+    extra = 0
 
 
 class StudentInlineReadOnly(admin.TabularInline):
@@ -191,6 +192,7 @@ class CustomUserAdmin(UserAdmin):
         "get_house",
         "get_year",
         "get_staff_role",
+        "created_externally",
         "is_active",
         "is_staff",
         "is_superuser",
@@ -233,6 +235,7 @@ class CustomUserAdmin(UserAdmin):
         "student__prefect",
         "staff__staff_type",
         "sex",
+        "created_externally",
     )
     fieldsets = (
         (
@@ -249,6 +252,7 @@ class CustomUserAdmin(UserAdmin):
                     "common_name",
                     "middle_name",
                     "sex",
+                    "created_externally",
                 )
             },
         ),
@@ -299,7 +303,7 @@ class CustomUserAdmin(UserAdmin):
         "first_name",
         "last_name",
     )
-    readonly_fields = ["get_fullname"]
+    readonly_fields = ["get_fullname", "created_externally"]
     ordering = ("uid",)
 
     def has_change_permission(self, request, obj=None):

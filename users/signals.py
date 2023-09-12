@@ -17,6 +17,8 @@ def populate_user_profile(sender, user, ldap_user, **kwargs):
     temp_profile = None
     data = {}
     account_type = str(ldap_user.attrs["employeeType"][0]).lower()
+    user.created_externally = True
+    user.save()
 
     # Suspension Check
     if not user.is_superuser:

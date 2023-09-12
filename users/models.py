@@ -57,6 +57,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         "Title", max_length=20, default=Title.UNKNOWN, choices=Title.choices
     )
 
+    created_externally = models.BooleanField(
+        "Created From LDAP", default=False, editable=False
+    )
+
     def full_name(self, include_middle=True, last_name_first=False):
         if include_middle:
             if last_name_first:
