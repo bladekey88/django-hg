@@ -106,29 +106,31 @@
             <h5>Books</h5>
             {% for book in author.book_set.all %}
             <div class="series-item-list">
-                <dt>
-                    <a href="{{ book.get_absolute_url}}">
-                        {{book}} ({{book.publish_date|date:"Y"}})
-                    </a>
-                    {% if book.author.all|length > 1 %}
-                    <p class="fw-light text-body-secondary p-0 m-0 mb-2">
-                        {{book.author.all|join:", " }}
-                    </p>
-                    {%endif%}
-                </dt>
-                <dd>{{book.summary}}</dd>
-                <dd>
-                    <small class="text-secondary">Genre: {{ book.genre.all|join:", " }}</small>
-                </dd>
-                {% if book.series %}
-                <dd>
-                    <small class="text-secondary">
-                        Series: {{book.series}}
-                        (Book <span class="fw-bolder">{{book.position_in_series}}</span> of
-                        <span class="fw-bolder">{{book.series.book_set.all.count}}</span>)
-                    </small>
-                </dd>
-                {% endif %}
+                <dl>
+                    <dt>
+                        <a href="{{ book.get_absolute_url}}">
+                            {{book}} ({{book.publish_date|date:"Y"}})
+                        </a>
+                        {% if book.author.all|length > 1 %}
+                        <p class="fw-light text-body-secondary p-0 m-0 mb-2">
+                            {{book.author.all|join:", " }}
+                        </p>
+                        {%endif%}
+                    </dt>
+                    <dd>{{book.summary}}</dd>
+                    <dd>
+                        <small class="text-secondary">Genre: {{ book.genre.all|join:", " }}</small>
+                    </dd>
+                    {% if book.series %}
+                    <dd>
+                        <small class="text-secondary">
+                            Series: {{book.series}}
+                            (Book <span class="fw-bolder">{{book.position_in_series}}</span> of
+                            <span class="fw-bolder">{{book.series.book_set.all.count}}</span>)
+                        </small>
+                    </dd>
+                    {% endif %}
+                </dl>
             </div>
             {% endfor %}
         </div>

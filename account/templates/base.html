@@ -240,7 +240,7 @@
 	</head>
 
 
-	{% if request.user.is_school_staff  or request.user.is_superuser %}
+	{% if request.user.is_superuser %}
 	<div class="alert alert-danger bg-danger text-black m-0 p-3 rounded-0 text-center border-0 shadow-lg">
 		<span style="font-weight:1000;">SITE IS IN DEBUG MODE</span>
 	</div>

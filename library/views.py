@@ -570,8 +570,13 @@ class BorrowerActivate(
         except Borrower.DoesNotExist:
             pass  # Do Nothing for now
 
-        messages.success(self.request, self.success_message)
-        return redirect("library:borrower-detail", borrower_id)
+        if is_ajax(request):
+            data = {}
+            data["status"] = borrower.status  # type: ignore
+            return JsonResponse(data)
+        else:
+            messages.success(self.request, self.success_message)
+            return redirect("library:borrower-detail", borrower_id)
 
 
 class BorrowerAdd(
