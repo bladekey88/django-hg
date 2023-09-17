@@ -468,6 +468,9 @@ class Borrower(models.Model):
             "user__last_name",
             "user__first_name",
         ]
+        permissions = [
+            ("permanently_delete_borrower", "Can Permanently Delete Borrower")
+        ]
 
     class BorrowerStatus(models.TextChoices):
         ACTIVE = ("A", "Active")

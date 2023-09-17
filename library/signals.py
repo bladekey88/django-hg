@@ -1,6 +1,6 @@
 from .models import Borrower
 from django.dispatch import receiver
-from django.db.models.signals import post_save, post_delete, pre_delete
+from django.db.models.signals import post_save, post_delete
 from django.contrib.auth.models import Group
 
 # GROUPS TO ADD USERS TO
@@ -21,6 +21,7 @@ def add_library_group_membership(sender, created, instance, **kwargs):
         user.groups.add(STANDARD_LIBRARY_GROUP)
 
 
+# Remove from groups after Borrower Record is deleted
 @receiver(post_delete, sender=Borrower)
 def remove_library_group_membership(sender, instance, **kwargs):
     user = instance.user

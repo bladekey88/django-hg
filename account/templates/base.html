@@ -301,7 +301,18 @@
 								{% block breadcrumbs_current_page %}{% endblock %}
 							</ol>
 						</div>
-						<div class="search">Search</div>
+						<div class="search">
+							<form class="d-flex justify-content-end" role="search" method="POST" name="search"
+								id="serach-member">
+								{% csrf_token %}
+								<input name="search-text" disabled="disabled" id="search-text"
+									class="border-dark form-control rounded-0  w-50 p-0 px-1" type="search"
+									aria-label="Search">
+								<button disabled class="bi bi-search btn btn-outline-primary p-0 px-2 m-0 rounded-0"
+									type="submit"> Search</button>
+							</form>
+						</div>
+
 					</div>
 				</div>
 				{% endblock secondary-navbar %}

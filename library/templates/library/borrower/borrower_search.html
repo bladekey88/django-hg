@@ -25,6 +25,10 @@
         --house-slytherin: 0, 152, 121;
         --house-unsorted: 58, 57, 57;
         --staff: 136, 26, 247;
+        --active: 0, 100, 0;
+        --suspended: 139, 0, 0;
+        --pending: 74, 188, 188;
+        --inactive: 128, 128, 128;
     }
 
     * {
@@ -83,6 +87,30 @@
         border: 2px solid rgba(var(--staff));
     }
 
+    .btn-active {
+        color: rgba(var(--active));
+        background-color: #fff;
+        border: 2px solid rgba(var(--active));
+    }
+
+    .btn-suspended {
+        color: rgba(var(--suspended));
+        background-color: #fff;
+        border: 2px solid rgba(var(--suspended));
+    }
+
+    .btn-pending {
+        color: rgba(var(--pending));
+        background-color: #fff;
+        border: 2px solid rgba(var(--pending));
+    }
+
+    .btn-inactive {
+        color: rgba(var(--inactive));
+        background-color: #fff;
+        border: 2px solid rgba(var(--inactive));
+    }
+
     .btn-gryffindor:hover {
         background-color: rgba(var(--house-gryffindor), 1);
         color: #fff;
@@ -122,6 +150,26 @@
     .btn-year:hover {
         background-color: #333;
         color: #fff
+    }
+
+    .btn-active:hover {
+        background-color: rgba(var(--active));
+        color: #fff;
+    }
+
+    .btn-suspended:hover {
+        background-color: rgba(var(--suspended));
+        color: #fff;
+    }
+
+    .btn-pending:hover {
+        background-color: rgba(var(--pending));
+        color: #fff;
+    }
+
+    .btn-inactive:hover {
+        background-color: rgba(var(--inactive));
+        color: #fff;
     }
 </style>
 {% endblock pagestyle %}
@@ -186,7 +234,7 @@
         <div class="returned-students">
             {% for member in members %}
             <a href="{% url 'library:borrower-detail' member.id %}" target="_blank">
-                <p class="fw-bolder m-0 p-0">{{member.user.full_name}}</p>
+                <p class="fw-bolder m-0 p-0">{{member.user.full_name}} ({{member.get_status_display}})</p>
             </a>
             {% endfor %}
         </div>
@@ -197,6 +245,24 @@
     {% endif %}
 </div>
 <!-- CATEGORY-->
+<section id="member-status">
+    <div class="d-flex pb-1 my-4 justify-content-between border-bottom border-1 align-items-center">
+        <h4 class="pt-1">
+            By Member Status
+        </h4>
+    </div>
+    <div class="d-flex align-items-center gap-3 justify-content-start flex-wrap">
+        {% for status in statuses %}
+        <div class="my-0 flex-shrink-0">
+            <a class="fw-bolder btn btn-lg btn-{{status.name|lower}}" role="link"
+                href="{% url 'library:borrower-status' status.name|lower %}">
+                {{status.name|lower|capfirst}}
+            </a>
+
+        </div>
+        {% endfor type %}
+    </div>
+</section>
 <section id="member-surname">
     <div class="d-flex pb-1 my-4 justify-content-between border-bottom border-1 align-items-center">
         <h4 class="pt-1">
@@ -236,7 +302,7 @@
             </a>
             {% endif %}
         </div>
-        {% endfor house %}
+        {% endfor type %}
     </div>
 </section>
 <section id="member-house">
@@ -249,7 +315,7 @@
         {% for house in houses %}
         <div class="my-0 flex-shrink-0">
             {% if house.name|lower == request.user.student.get_house_display|lower %}
-            <a class="fw-bolder btn btn-lg btn-staff" role="link"
+            <a class="fw-bolder btn btn-lg btn-{{house.name|lower}}" role="link"
                 href="{% url 'library:borrower-house' house.name|lower %}">
                 {{house.name|lower|capfirst}}
                 <span class="badge rounded-pill"

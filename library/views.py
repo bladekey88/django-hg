@@ -21,7 +21,7 @@ from users.models import Student, Staff
 from django.db.models import Q
 
 
-# Create your views here.
+# Common Functions
 def get_parent_model(pk):
     item_models = [Book, VideoGame, Series]
     item = None
@@ -37,7 +37,27 @@ def is_ajax(request):
     return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
 
-class LibraryHomeView(ListView):
+# Common Classes
+class NoPermissionMixin(SuccessMessageMixin):
+    """Mixin overrides permissions and forces redirect to homepage
+    when no permission is raised for non-active users"""
+
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            if (
+                request.user.library_user.status != "A"
+            ):  # library_user is related name from new library model
+                return self.handle_no_permission()
+
+        return super().get(request, *args, **kwargs)  # type: ignore
+
+    def handle_no_permission(self):
+        messages.error(self.request, "Page Not Found", extra_tags="danger")
+        return redirect("library:index", permanent=False)
+
+
+# Create your views here.
+class LibraryHomeView(SuccessMessageMixin, ListView):
     template_name = "library/index.html"
 
     def get(self, request):
@@ -107,20 +127,6 @@ class LibraryCreateAccount(LoginRequiredMixin, TemplateView):
                 return render(request, self.template_name, context)
             else:
                 return redirect("library:index")
-
-
-class NoPermissionMixin:
-    def get(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
-            if (
-                request.user.library_user.status != "A"
-            ):  # library_user is related name from new library model
-                return self.handle_no_permission()
-
-        return super().get(request, *args, **kwargs)  # type: ignore
-
-    def handle_no_permission(self):
-        return redirect("library:index", permanent=False)
 
 
 class BookListView(NoPermissionMixin, PermissionRequiredMixin, ListView):
@@ -398,11 +404,11 @@ class SeriesDelete(
     success_url = reverse_lazy("library:series")
 
 
-class BorrowerSeach(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
+class BorrowerSearch(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
     permission_required = [
         "library.view_borrower",
     ]
-    template_name = "library/borrower_search.html"
+    template_name = "library/borrower/borrower_search.html"
 
     def generate_alphabet_index(self):
         """
@@ -414,6 +420,7 @@ class BorrowerSeach(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
         import string
 
         letters = {letter: 0 for letter in string.ascii_lowercase}
+        letters["."] = 0
         qs = Borrower.objects.all()
         for borrower in qs:
             letters[borrower.user.full_name(False, True)[0].lower()] += 1
@@ -425,6 +432,7 @@ class BorrowerSeach(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
         context["years"] = Student.Year
         context["alpha"] = self.generate_alphabet_index()
         context["stafftype"] = Staff.StaffType
+        context["statuses"] = Borrower.BorrowerStatus
         return context
 
     def post(self, request):
@@ -445,7 +453,7 @@ class BorrowerSeach(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
 
 class BorrowerViewAlpha(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["library.view_borrower"]
-    template_name = "library/borrower_list_a_z.html"
+    template_name = "library/borrower/borrower_list_a_z.html"
     paginate_by = 10
 
     def get(self, request, letter):
@@ -465,7 +473,7 @@ class BorrowerViewAlpha(NoPermissionMixin, PermissionRequiredMixin, TemplateView
 
 class BorrowerViewHouse(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["users.view_student", "users.view_staff"]
-    template_name = "library/borrower_list_house.html"
+    template_name = "library/borrower/borrower_list_house.html"
 
     def get(self, request, house):
         if house.lower() in [e.name.lower() for e in Student.House]:
@@ -492,7 +500,7 @@ class BorrowerViewHouse(NoPermissionMixin, PermissionRequiredMixin, TemplateView
 
 class BorrowerViewYear(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["library.view_borrower"]
-    template_name = "library/borrower_list_year.html"
+    template_name = "library/borrower/borrower_list_year.html"
 
     def get(self, request, year):
         if year.lower() in [e.name.lower() for e in Student.Year]:
@@ -518,7 +526,7 @@ class BorrowerViewYear(NoPermissionMixin, PermissionRequiredMixin, TemplateView)
 
 class BorrowerViewStaff(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
     permission_required = ["library.view_borrower"]
-    template_name = "library/borrower_list_staff.html"
+    template_name = "library/borrower/borrower_list_staff.html"
 
     def get(self, request, stafftype):
         if stafftype.lower() in [e.name.lower() for e in Staff.StaffType]:
@@ -543,11 +551,40 @@ class BorrowerViewStaff(NoPermissionMixin, PermissionRequiredMixin, TemplateView
             raise Http404("Staff type does not exist or is not accessible.")
 
 
+class BorrowerViewStatus(NoPermissionMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ["library.view_borrower"]
+    template_name = "library/borrower/borrower_list_status.html"
+
+    def get(self, request, borrower_status):
+        if borrower_status.lower() in [e.name.lower() for e in Borrower.BorrowerStatus]:
+            output = [
+                e.value
+                for e in Borrower.BorrowerStatus
+                if borrower_status.lower() == e.name.lower()
+            ]
+            qs = (
+                Borrower.objects.filter(status=output[0])
+                .all()
+                .order_by(
+                    "user__first_name",
+                )
+            )
+            if qs.count() > 0:
+                context = {}
+                context["borrowers"] = qs
+                context["borrower_status"] = borrower_status
+                return render(request, self.template_name, context=context)
+            else:
+                raise Http404("Staff type has no members")
+        else:
+            raise Http404("Staff type does not exist or is not accessible.")
+
+
 class BorrowerListView(NoPermissionMixin, PermissionRequiredMixin, ListView):
     permission_required = ["library.view_borrower"]
     model = Borrower
     paginate_by = 0
-    template_name = "library/borrower_list_all.html"
+    template_name = "library/borrower/borrower_list_all.html"
 
 
 class BorrowerActivate(
@@ -589,7 +626,7 @@ class BorrowerAdd(
         "status",
     ]
     readonly_fields = ["borrow_limit"]
-    template_name = "library/borrower_add.html"
+    template_name = "library/borrower/borrower_add.html"
     raise_exception = True
     success_url = reverse_lazy("library:borrowers-search")
     success_message = "Borrower created successfully."
@@ -611,7 +648,7 @@ class BorrowerEdit(
         "borrow_limit",
         "max_fine_amount",
     ]
-    template_name = "library/borrower_edit.html"
+    template_name = "library/borrower/borrower_edit.html"
     raise_exception = True
     success_message = "Member updated successfully"
 
@@ -621,7 +658,7 @@ class BorrowerEdit(
 
 class BorrowerDetail(NoPermissionMixin, SuccessMessageMixin, DetailView):
     model = Borrower
-    template_name = "library/borrower_detail.html"
+    template_name = "library/borrower/borrower_detail.html"
 
     def get(self, request, *args, **kwargs):
         if request.user.is_superuser or request.user.groups.filter(name="Librarians"):
@@ -642,7 +679,7 @@ class BorrowerDelete(
     permission_required = ["library.delete_borrower"]
     permission_denied_message = "Access Forbidden"
     model = Borrower
-    template_name = "library/borrower_delete.html"
+    template_name = "library/borrower/borrower_delete.html"
     success_url = reverse_lazy("library:borrowers-search")
     success_message = (
         "Member has been marked for deletion. Deletion will occur after admin review."

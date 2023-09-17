@@ -14,6 +14,22 @@
 {% block contentclass %}container px-3 my-4{% endblock contentclass%}
 {% block content %}
 
+{% if messages %}
+{% for message in messages %}
+<div class="notices mb-3">
+    <p
+        class="text-{{message.tags}} alert alert-{{message.tags}} p-0 rounded-0 border-0 border-3 border-top border-bottom border-{{message.tags}}">
+        <strong class="ms-2">
+            {% if message.tags == "success"%}
+            <i class="bi bi-check-circle"></i>
+            {% endif %}
+            {{ message }}
+        </strong>
+    </p>
+</div>
+{% endfor %}
+{% endif %}
+
 {% if not request.user.library_user %}
 <div class="alert alert-warning border-danger border-2 rounded-1 shadow-lg align-items-center text-center">
     <h4 class="fw-bolder">

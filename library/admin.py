@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.http.request import HttpRequest
 from django.utils.translation import ngettext
 from django.contrib import admin
 from django.contrib.auth.models import Permission
@@ -338,6 +339,18 @@ class BorrowerAdmin(admin.ModelAdmin):
     ordering = [
         "user__common_name",
     ]
+
+    def has_delete_permission(self, request, obj=None):
+        if request.user.has_perm("permanently_delete_borrower"):
+            return True
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            if obj.status == Borrower.BorrowerStatus.INACTIVE:
+                if request.user.has_perm("permanently_delete_borrower"):
+                    return True
+            else:
+                return super().has_change_permission(request, obj)
 
 
 class LanguageAdmin(admin.ModelAdmin):

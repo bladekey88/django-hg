@@ -186,7 +186,7 @@ AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
 AUTH_LDAP_GROUP_TYPE = GroupOfNamesType()
 
 AUTH_LDAP_USER_FLAGS_BY_GROUP = {
-    "is_staff": LDAPGroupQuery("cn=all users,ou=openfire,ou=groups,dc=hogwarts,dc=wiz"),
+    "is_staff": LDAPGroupQuery("cn=Hogwarts Staff,ou=groups,dc=hogwarts,dc=wiz"),
     "is_superuser": LDAPGroupQuery("cn=administrators,ou=groups,dc=hogwarts,dc=wiz"),
 }
 

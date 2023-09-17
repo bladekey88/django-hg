@@ -41,7 +41,7 @@ urlpatterns = [
     path("authors/", views.AuthorListView.as_view(), name="authors"),
     path("authors/add/", views.AuthorAdd.as_view(), name="author-add"),
     path("authors/<str:pk>/", views.AuthorDetailView.as_view(), name="author-detail"),
-    path("members/", views.BorrowerSeach.as_view(), name="borrowers-search"),
+    path("members/", views.BorrowerSearch.as_view(), name="borrowers-search"),
     path(
         "members/a-z/<letter>/",
         views.BorrowerViewAlpha.as_view(),
@@ -61,6 +61,11 @@ urlpatterns = [
         "members/staff/<stafftype>/",
         views.BorrowerViewStaff.as_view(),
         name="borrower-staff",
+    ),
+    path(
+        "members/status/<borrower_status>/",
+        views.BorrowerViewStatus.as_view(),
+        name="borrower-status",
     ),
     path("members/all/", views.BorrowerListView.as_view(), name="borrowers-all"),
     path("members/add/", views.BorrowerAdd.as_view(), name="borrower-add"),
