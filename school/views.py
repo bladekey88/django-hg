@@ -133,6 +133,7 @@ class ViewStudents(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         import string
 
         letters = {letter: 0 for letter in string.ascii_lowercase}
+        letters["."] = 0
         qs = Student.objects.all()
         for student in qs:
             letters[student.user.full_name(False, True)[0].lower()] += 1

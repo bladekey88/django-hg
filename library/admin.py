@@ -1,8 +1,7 @@
-from django.contrib import messages
-from django.http.request import HttpRequest
-from django.utils.translation import ngettext
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.models import Permission
+from django.utils.translation import ngettext
+
 from .models import (
     Author,
     Genre,
@@ -13,6 +12,7 @@ from .models import (
     Language,
     BookInstance,
     VGInstance,
+    GenericInstance,
 )
 
 
@@ -381,3 +381,4 @@ admin.site.register(Series, SeriesAdmin)
 admin.site.register(VideoGame, VideoGameAdmin)
 admin.site.register(BookInstance, BookInstanceAdmin)
 admin.site.register(VGInstance, VGInstanceAdmin)
+admin.site.register(GenericInstance)

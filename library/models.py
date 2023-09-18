@@ -658,3 +658,79 @@ class DVD(LibraryItem):
         verbose_name_plural = "DVDs"
         permissions = LibraryItem._meta.default_permissions
         default_permissions = []
+
+
+class GenericInstance(models.Model):
+    class Meta:
+        verbose_name = "Item Instance"
+        verbose_name_plural = "Item Instances"
+
+    instance_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        help_text="Unique ID for this particular instance across whole library",
+        editable=False,
+    )
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.UUIDField()
+    content_object = GenericForeignKey("content_type", "object_id")
+
+    class ItemStatus(models.TextChoices):
+        AVAILABLE = ("A", "Available")
+        DAMAGED = ("D", "Damaged")
+        INTERNAL = ("I", "Internal")
+        LOST = ("L", "Lost")
+        ON_HOLD = ("H", "On Hold")
+        ON_LOAN = ("O", "On Loan")
+        MISSING = ("M", "Missing")
+        PROCESSING = ("P", "Processing")
+        UNAVAILABLE = ("U", "Unavailable")
+
+    status = models.TextField(
+        "Status",
+        choices=ItemStatus.choices,
+        default=ItemStatus.AVAILABLE,
+        max_length=1,
+    )
+
+    class Medium(models.TextChoices):
+        CARTRIDGE = ("C", "Cartridge")
+        DISC = ("D", "Disc")
+        EBOOK = ("E", "E-book")
+        HARDBACK = ("H", "Hardback")
+        PAPERBAK = ("P", "Paperback")
+        DOWNLOADKEY = ("K", "Download Key")
+
+    medium_type = models.TextField(
+        "Medium Type",
+        choices=Medium.choices,
+        max_length=4,
+    )
+
+    publish_date = models.DateField(
+        "Published On",
+        blank=True,
+        null=True,
+    )
+
+    item_language = models.ManyToManyField(
+        Language,
+        related_name="copy_language",
+    )
+
+    platform = models.CharField(
+        "Platform",
+        max_length=10,
+        choices=VideoGame.SystemPlatform.choices,
+        blank=True,
+        null=True,
+    )
+
+    isbn = models.CharField(
+        "ISBN",
+        max_length=13,
+        unique=False,
+        help_text="""Defaults to Book ISBN if not value entered""",  # noqa
+        blank=True,
+        null=True,
+    )
