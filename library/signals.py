@@ -1,4 +1,4 @@
-from .models import Borrower
+from .models import Borrower, GenericInstance, CheckOut
 from django.dispatch import receiver
 from django.db.models.signals import post_save, post_delete
 from django.contrib.auth.models import Group
@@ -27,3 +27,17 @@ def remove_library_group_membership(sender, instance, **kwargs):
     user = instance.user
     for library_group in library_groups:
         user.groups.remove(library_group)
+
+
+# Afer new CheckOut Instance created, set the GenericInstance to OnLoan
+@receiver(post_save, sender=CheckOut)
+def set_generic_instance_on_load(sender, instance, created, **kwargs):
+    generic_instance = instance.item_instance
+    if created:
+        generic_instance.status = GenericInstance.ItemStatus.ON_LOAN
+        generic_instance.save()
+
+    else:
+        if instance.return_date:
+            generic_instance.status = GenericInstance.ItemStatus.AVAILABLE
+            generic_instance.save()

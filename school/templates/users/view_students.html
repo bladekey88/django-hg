@@ -128,11 +128,11 @@
     <form class="d-flex flex-start" role="search" method="POST" name="search-student" id="serach-student">
         {% csrf_token %}
         <input name="search-student-text" id="search-student-text" class="border-dark form-control me-2 w-50"
-            type="search" placeholder="Enter Search Text" aria-label="Search">
+            type="search" placeholder="Enter Name to Search" aria-label="Search">
         <button class="btn btn-outline-primary" type="submit">Search</button>
     </form>
     {% if query_error %}
-    <div class="text-danger error">
+    <div class="text-danger error fw-bolder">
         Search terms must be at least three characters
     </div>
     {% endif %}
@@ -143,7 +143,8 @@
         <div class="returned-students">
             {% for student in students %}
             <a href="{% url 'school:student_profile' student.user.uid %}" target="_blank">
-                <p class="fw-bolder m-0 p-0">{{student.user.full_name}}</p>
+                <p class="fw-bolder m-0 p-0">{{student.user.full_name}} ({{student.user.common_name}}) -
+                    {{student.user.idnumber}}</p>
             </a>
             {% endfor %}
         </div>
@@ -160,7 +161,8 @@
     </h4>
 </div>
 <div class="d-flex align-items-center gap-3 flex-wrap">
-    {% for house in houses %}
+    {% for house,count in houses.items %}
+    {% if count > 0 %}
     <div class="my-0 flex-shrink-0">
         {% if house.name|lower == request.user.student.get_house_display|lower %}
         <a class="fw-bolder btn btn-lg btn-{{house.name|lower}}" role="link"
@@ -177,6 +179,7 @@
         {% endif %}
 
     </div>
+    {% endif %}
     {% endfor house %}
 </div>
 <div class="pb-1 my-4 border-bottom border-1">
@@ -185,7 +188,8 @@
     </h4>
 </div>
 <div class="d-flex align-items-center gap-3 flex-wrap">
-    {% for year in years %}
+    {% for year,count in years.items %}
+    {% if count > 0 %}
     <div class="my-0 flex-shrink-0">
         {% if year.name|lower == request.user.student.get_year_display|lower %}
         <a class="fw-bolder btn btn-lg btn-year" role="link" href="{% url 'school:staff_year' year.name|lower %}">
@@ -200,6 +204,7 @@
         {% endif %}
 
     </div>
+    {% endif %}
     {% endfor year %}
 </div>
 <div class="d-flex pb-1 my-4 justify-content-between border-bottom border-1 align-items-center">

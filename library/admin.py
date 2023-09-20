@@ -1,18 +1,20 @@
 from django.contrib import admin, messages
 from django.contrib.auth.models import Permission
+from django.http.request import HttpRequest
 from django.utils.translation import ngettext
 
 from .models import (
     Author,
-    Genre,
-    Series,
     Book,
-    VideoGame,
-    Borrower,
-    Language,
     BookInstance,
-    VGInstance,
+    Borrower,
+    CheckOut,
     GenericInstance,
+    Genre,
+    Language,
+    Series,
+    VGInstance,
+    VideoGame,
 )
 
 
@@ -372,6 +374,51 @@ class LanguageAdmin(admin.ModelAdmin):
     ]
 
 
+class CheckOutAdmin(admin.ModelAdmin):
+    model = CheckOut
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            if obj.return_date:
+                return False
+            else:
+                return super().has_change_permission(request, obj)
+        else:
+            return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj:
+            if obj.return_date:
+                return False
+            else:
+                return super().has_delete_permission(request, obj)
+        else:
+            return super().has_delete_permission(request, obj)
+
+
+class GenericInstanceAdmin(admin.ModelAdmin):
+    @admin.display(description="Can Be Checked Out")
+    def display_cbco(self, obj):
+        return obj.can_be_checked_out
+
+    @admin.display(description="Currently Checked Out")
+    def display_isco(self, obj):
+        return obj.is_checked_out
+
+    model = GenericInstance
+    list_display = [
+        "content_object",
+        "content_type",
+        "object_id",
+        "status",
+        "medium_type",
+        "display_cbco",
+        "display_isco",
+    ]
+
+    list_filter = ["content_type", "status", "platform", "status"]
+
+
 admin.site.register(Author, AuthorAdmin)
 admin.site.register(Book, BookAdmin)
 admin.site.register(Borrower, BorrowerAdmin)
@@ -381,4 +428,5 @@ admin.site.register(Series, SeriesAdmin)
 admin.site.register(VideoGame, VideoGameAdmin)
 admin.site.register(BookInstance, BookInstanceAdmin)
 admin.site.register(VGInstance, VGInstanceAdmin)
-admin.site.register(GenericInstance)
+admin.site.register(GenericInstance, GenericInstanceAdmin)
+admin.site.register(CheckOut, CheckOutAdmin)

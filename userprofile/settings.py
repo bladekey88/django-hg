@@ -191,7 +191,7 @@ AUTH_LDAP_USER_FLAGS_BY_GROUP = {
 }
 
 
-LOGIN_REDIRECT_URL = "account:dashboard"
+LOGIN_REDIRECT_URL = "school:home"
 LOGIN_URL = "account:login"
 LOGOUT_URL = "account:logout"
 LOGOUT_REDIRECT_URL = "account:login"

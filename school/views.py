@@ -137,12 +137,35 @@ class ViewStudents(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         qs = Student.objects.all()
         for student in qs:
             letters[student.user.full_name(False, True)[0].lower()] += 1
+        # If non-standard chars in URL, use convert key to "OTHER"
+        letters["other"] = letters["."]
+        del letters["."]
         return letters
+
+    def generate_house_index(self):
+        """
+        Get a count of Students in a House to
+        properly display values when page is rendered
+        """
+        houses = dict()
+        for house in Student.House:
+            houses[house] = Student.objects.filter(house=house).count()
+        return houses
+
+    def generate_year_index(self):
+        """
+        Get a count of Students in a Year to
+        properly display values when page is rendered
+        """
+        years = dict()
+        for year in Student.Year:
+            years[year] = Student.objects.filter(year=year).count()
+        return years
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["houses"] = Student.House
-        context["years"] = Student.Year
+        context["houses"] = self.generate_house_index()
+        context["years"] = self.generate_year_index()
         context["alpha"] = self.generate_alphabet_index()
         return context
 
@@ -153,7 +176,8 @@ class ViewStudents(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
             q1 = Q(user__first_name__icontains=search_string)
             q2 = Q(user__common_name__icontains=search_string)
             q3 = Q(user__last_name__icontains=search_string)
-            students = Student.objects.filter(q1 | q2 | q3)
+            q4 = Q(user__middle_name__icontains=search_string)
+            students = Student.objects.filter(q1 | q2 | q3 | q4)
             context["query"] = search_string
             context["students"] = students
         else:
@@ -167,14 +191,14 @@ class ViewStudentAlpha(LoginRequiredMixin, PermissionRequiredMixin, TemplateView
     paginate_by = 10
 
     def get(self, request, letter):
-        letter = letter.upper()
+        if letter.lower() == "other":
+            search_letter = "."
+        else:
+            search_letter = letter.upper()
         qs = (
-            Student.objects.filter(user__last_name__istartswith=letter)
+            Student.objects.filter(user__last_name__istartswith=search_letter)
             .all()
-            .order_by(
-                "year",
-                "user__first_name",
-            )
+            .order_by("year", "user__first_name")
         )
         if not qs:
             raise Http404(f"No students with surnames that begin with {letter}")

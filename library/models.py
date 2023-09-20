@@ -1,3 +1,4 @@
+from django.apps import apps
 from django.db import models
 from django.core.exceptions import ValidationError
 import uuid
@@ -225,6 +226,191 @@ class Series(models.Model):
         return reverse("library:series-detail", args=[str(self.id)])  # type: ignore # noqa
 
 
+class GenericInstance(models.Model):
+    """
+    The GenericInstance is to handle any ItemType instances
+    rather than constantly creating new classes. However,
+    this means that validation functions have to be handled
+    on a per itemType basis on the save method to avoid weird
+    data issues.
+    """
+
+    instance_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        help_text="Unique ID for this particular instance across whole library",
+        editable=False,
+    )
+
+    # This field is only used to hide non-viable contenttypes in
+    # dropdowns. May be better to use programatic way to find
+    # valid contenttypes. TODO INVEGISTGATE IF POSSIBLE
+    limit = models.Q(app_label="library", model="Book") | models.Q(
+        app_label="library",
+        model="VideoGame",
+    )
+    content_type = models.ForeignKey(
+        ContentType, on_delete=models.CASCADE, limit_choices_to=limit
+    )
+    object_id = models.UUIDField("Object ID")
+    content_object = GenericForeignKey("content_type", "object_id")
+
+    class ItemStatus(models.TextChoices):
+        AVAILABLE = ("A", "Available")
+        DAMAGED = ("D", "Damaged")
+        INTERNAL = ("I", "Internal")
+        LOST = ("L", "Lost")
+        ON_HOLD = ("H", "On Hold")
+        ON_LOAN = ("O", "On Loan")
+        MISSING = ("M", "Missing")
+        PROCESSING = ("P", "Processing")
+        UNAVAILABLE = ("U", "Unavailable")
+
+    status = models.TextField(
+        "Status",
+        choices=ItemStatus.choices,
+        default=ItemStatus.AVAILABLE,
+        max_length=1,
+    )
+
+    class Medium(models.TextChoices):
+        CARTRIDGE = ("C", "Cartridge")
+        DISC = ("D", "Disc")
+        EBOOK = ("E", "E-book")
+        HARDBACK = ("H", "Hardback")
+        PAPERBAK = ("P", "Paperback")
+        DOWNLOADKEY = ("K", "Download Key")
+
+    medium_type = models.TextField(
+        "Medium Type",
+        choices=Medium.choices,
+        max_length=4,
+    )
+
+    publish_date = models.DateField(
+        "Published On",
+        blank=True,
+        null=True,
+    )
+
+    item_language = models.ManyToManyField(
+        Language,
+        related_name="copy_language",
+    )
+
+    class SystemPlatform(models.TextChoices):
+        PC = ("PC", "PC")
+        NES = ("NES", "Nintendo Enetertainment System")
+        SNES = ("SNES", "Super Nintendo Entertainment System")
+        N64 = ("N64", "Nintendo 64")
+        GC = ("GC", "Nintendo Gamecube")
+        WII = ("WII", "Nintendo Wii")
+        WIIU = ("WIIU", "Wii-U")
+        SWITCH = ("SWITCH", "Nintendo Switch")
+        GB = ("GB", "Gameboy")
+        GBC = ("GBC", "Gameboy Color")
+        GBA = ("GBA", "Gameboy Advance")
+        DS = ("DS", "Nintendo DS")
+        THREEDS = ("3DS", "3DS")
+        PS1 = ("PS1", "Playstation 1")
+        PS2 = ("PS2", "Playstation 2")
+        PS3 = ("PS3", "Playstation 3")
+        PS4 = ("PS4", "Playstation 4")
+        PS5 = ("PS5", "Playstation 5")
+        XBOX = ("XBOX", "XBox")
+        X360 = ("X360", "XBox 360")
+        XONE = ("XONE", "XBox One")
+        XSXS = ("XSXSE", "XBox Series X/S")
+
+    platform = models.CharField(
+        "Platform",
+        max_length=10,
+        choices=SystemPlatform.choices,
+        blank=True,
+        null=True,
+    )
+
+    isbn = models.CharField(
+        "ISBN",
+        max_length=13,
+        unique=False,
+        help_text="""Defaults to Book ISBN if not value entered""",  # noqa
+        blank=True,
+        null=True,
+    )
+
+    @property
+    def can_be_checked_out(self):
+        if self.status == self.ItemStatus.AVAILABLE:
+            return True
+        else:
+            return False
+
+    @property
+    def is_checked_out(self):
+        if self.checkout_set.filter(return_date=None).count() > 0:
+            return True
+        else:
+            return False
+
+    def check_out(self):
+        if self.status == self.ItemStatus.AVAILABLE:
+            self.status = self.ItemStatus.ON_LOAN
+            self.save()
+
+    def return_item(self):
+        if self.status == self.ItemStatus.ON_LOAN:
+            self.status = self.ItemStatus.AVAILABLE
+            self.save()
+
+    def __str__(self):
+        return f"{self.object_id} - {self.content_type}"
+
+    def clean(self, *args, **kwargs):
+        if not self.content_object:
+            raise ValidationError(
+                f"Object ID {self.object_id} does not exist for {self.content_type}"
+            )
+
+        model_name = self.content_object.__class__.__name__
+        new_model = self.content_type.model
+        Model = apps.get_model("library", new_model)
+        try:
+            Model.objects.get(pk=self.object_id)
+        except Model.DoesNotExist:
+            raise ValidationError(
+                f"Object ID {self.object_id} does not exist in {new_model.title()}"
+            )
+
+        if not self.publish_date:
+            self.publish_date = self.content_object.publish_date
+
+        if "Book" == model_name:
+            if self.medium_type not in ["E", "H", "P"]:
+                raise ValidationError(
+                    "The medium type selected is not applicable to Book Items."
+                )
+            if not self.isbn:
+                self.isbn = self.content_object.isbn
+            if self.platform:
+                self.platform = None
+        elif "VideoGame" == model_name:
+            if self.medium_type in ["E", "H", "P"]:
+                raise ValidationError(
+                    "The medium type selected is not applicable to Video Game Items."
+                )
+            if not self.platform:
+                raise ValidationError("Video Games must have a platform")
+            if self.isbn:
+                self.isbn = None
+        super().clean(*args, **kwargs)
+
+    def save(self):
+        self.clean()
+        self.is_checked_out
+        super().save()
+
+
 class LibraryItem(models.Model):
     """Abstract Model representing a generic item but not any specific copy"""
 
@@ -371,6 +557,8 @@ class Book(LibraryItem):
             status=BookInstance.BookItemStatus.AVAILABLE
         ).count()
 
+    instances = GenericRelation(GenericInstance)
+
 
 class VideoGame(LibraryItem):
     item_type = models.CharField(
@@ -451,6 +639,8 @@ class VideoGame(LibraryItem):
         verbose_name = "Video Game"
         verbose_name_plural = "Video Games"
         ordering = ["series", "position_in_series", "title"]
+
+    instances = GenericRelation(GenericInstance)
 
 
 class Borrower(models.Model):
@@ -660,77 +850,38 @@ class DVD(LibraryItem):
         default_permissions = []
 
 
-class GenericInstance(models.Model):
-    class Meta:
-        verbose_name = "Item Instance"
-        verbose_name_plural = "Item Instances"
-
+class CheckOut(models.Model):
     instance_id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
-        help_text="Unique ID for this particular instance across whole library",
+        help_text="Unique ID for this particular videogame instance across whole library",
         editable=False,
     )
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.UUIDField()
-    content_object = GenericForeignKey("content_type", "object_id")
-
-    class ItemStatus(models.TextChoices):
-        AVAILABLE = ("A", "Available")
-        DAMAGED = ("D", "Damaged")
-        INTERNAL = ("I", "Internal")
-        LOST = ("L", "Lost")
-        ON_HOLD = ("H", "On Hold")
-        ON_LOAN = ("O", "On Loan")
-        MISSING = ("M", "Missing")
-        PROCESSING = ("P", "Processing")
-        UNAVAILABLE = ("U", "Unavailable")
-
-    status = models.TextField(
-        "Status",
-        choices=ItemStatus.choices,
-        default=ItemStatus.AVAILABLE,
-        max_length=1,
+    borrower = models.ForeignKey(
+        Borrower, on_delete=models.PROTECT, related_name="borrower"
     )
-
-    class Medium(models.TextChoices):
-        CARTRIDGE = ("C", "Cartridge")
-        DISC = ("D", "Disc")
-        EBOOK = ("E", "E-book")
-        HARDBACK = ("H", "Hardback")
-        PAPERBAK = ("P", "Paperback")
-        DOWNLOADKEY = ("K", "Download Key")
-
-    medium_type = models.TextField(
-        "Medium Type",
-        choices=Medium.choices,
-        max_length=4,
+    issuer = models.ForeignKey(
+        Borrower,
+        on_delete=models.DO_NOTHING,
+        related_name="issuer",
     )
+    item_instance = models.ForeignKey(GenericInstance, on_delete=models.PROTECT)
+    checkout_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
+    due_date = models.DateTimeField()
+    return_date = models.DateTimeField(blank=True, null=True)
 
-    publish_date = models.DateField(
-        "Published On",
-        blank=True,
-        null=True,
-    )
+    def clean(self, *args, **kwargs):
+        super().clean(*args, **kwargs)
+        if (
+            not self.item_instance.can_be_checked_out()
+            and not self.item_instance.is_checked_out
+        ):
+            raise ValidationError("The item is not available for checkout")
 
-    item_language = models.ManyToManyField(
-        Language,
-        related_name="copy_language",
-    )
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
-    platform = models.CharField(
-        "Platform",
-        max_length=10,
-        choices=VideoGame.SystemPlatform.choices,
-        blank=True,
-        null=True,
-    )
-
-    isbn = models.CharField(
-        "ISBN",
-        max_length=13,
-        unique=False,
-        help_text="""Defaults to Book ISBN if not value entered""",  # noqa
-        blank=True,
-        null=True,
-    )
+    def __str__(self):
+        return f"{self.item_instance.content_object}|{self.item_instance.object_id}|CD: {self.checkout_date}| DD: {self.due_date}|RD: {self.return_date}"
