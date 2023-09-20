@@ -275,7 +275,7 @@ class Student(models.Model):
 
     @property
     def is_owl_student(self):
-        return self.year <= 5
+        return 0 < self.year <= 5
 
     @property
     def is_newt_student(self):
