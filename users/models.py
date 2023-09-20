@@ -260,6 +260,7 @@ class Student(models.Model):
         blank=True,
     )
 
+    @property
     def is_sorted(self):
         return self.house in {
             self.House.GRYFFINDOR,
@@ -268,12 +269,15 @@ class Student(models.Model):
             self.House.SLYTHERIN,
         }
 
+    @property
     def is_unsorted(self) -> bool:
         return self.house in {self.House.UNSORTED}
 
+    @property
     def is_owl_student(self):
         return self.year <= 5
 
+    @property
     def is_newt_student(self):
         return self.year >= 6
 
@@ -380,15 +384,25 @@ class QuidditchPlayer(models.Model):
         because they are not a Student. If you wish to proceed you must assign
         the Student object to the User."""
         TOO_MANY_CAPTAINS_ERROR = f"""
-        There are already four Quidditch Captains assigned, therefore this 
+        There are already four Quidditch Captains assigned, therefore this
         Student cannot be saved as a Captain."""
         FIRST_YEAR_STUDENT_ERROR = f"""
         First Year Students are not permitted to play on Quidditch Teams"""
+        INVALID_YEAR_ERROR = f"""
+        A valid student year must be provided: Current Value = '{self.student.year}'."""
+        INVALID_HOUSE_ERROR = f"""
+        A valid student house must be provided: Current Value = '{self.student.house}'."""
 
         try:
             student_exists = self.student
         except AttributeError:
             raise ValidationError(USER_IS_NOT_STUDENT_ERROR)
+
+        if self.student.is_unsorted:
+            raise ValidationError(INVALID_HOUSE_ERROR)
+
+        if self.student.year not in range(1, 8):
+            raise ValidationError(INVALID_YEAR_ERROR)
 
         if self.student.year < 2:
             raise ValidationError(FIRST_YEAR_STUDENT_ERROR)

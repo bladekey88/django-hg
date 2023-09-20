@@ -339,11 +339,11 @@ class StudentAdmin(admin.ModelAdmin):
 
     @admin.display(description="OWL Student")
     def get_owl(self, obj):
-        return obj.is_owl_student()
+        return obj.is_owl_student
 
     @admin.display(description="NEWT Student")
     def get_newt(self, obj):
-        return obj.is_newt_student()
+        return obj.is_newt_student
 
     @admin.display(description="Quidditch Player")
     def get_quidditch(self, obj):

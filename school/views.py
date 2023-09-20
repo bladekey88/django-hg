@@ -586,4 +586,6 @@ def home(request):
     elif request.user.is_parent():
         return redirect("school:parent_main")
     else:
-        return HttpResponse(f"{request.user} has a non-standard account")
+        return HttpResponse(
+            f"{request.user} has a non-standard account.<h3><a href='/account/logout'>Logout</a></h3>"
+        )

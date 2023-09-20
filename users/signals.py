@@ -1,8 +1,9 @@
 from django.dispatch import receiver
 import django_auth_ldap.backend
-from users.models import Student, CustomUser, QuidditchPlayer, Staff
-from django.db.models.signals import post_save
+from users.models import Student, CustomUser, QuidditchPlayer, Staff, Parent
+from django.db.models.signals import post_save, post_delete
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
 
 # TO DO - create separate function for account type creation#
 #  (e.g create_student, create_staff etc) so we can adhere to DRY
@@ -14,11 +15,14 @@ def populate_user_profile(sender, user, ldap_user, **kwargs):
     the attributes appropriately. This will get called after authentication
     against LDAP and core CustomUser/user attributes are mapped,
     """
-    temp_profile = None
     data = {}
     account_type = str(ldap_user.attrs["employeeType"][0]).lower()
     user.created_externally = True
     user.save()
+
+    all_users_group = Group.objects.get(name="All Users")
+    if not user.groups.filter(name=all_users_group.name).exists():
+        user.groups.add(all_users_group)
 
     # Suspension Check
     if not user.is_superuser:
@@ -40,12 +44,12 @@ def populate_user_profile(sender, user, ldap_user, **kwargs):
         """
         if account_type == "student":
             try:
-                temp_profile = user.student
-            except Exception:
-                temp_profile = Student.objects.create(user=user)
+                user.student
+            except Student.DoesNotExist:
+                Student.objects.create(user=user)
 
             """
-            Initial  Student attributes are School House, School Year, and 
+            Initial  Student attributes are School House, School Year, and
             Prefect status. If a value from LDAP is supplied then we use that,
             otherwise we fall back to the model default value for the
             attribute. We also create a linked Quidditch object as needed.
@@ -53,68 +57,74 @@ def populate_user_profile(sender, user, ldap_user, **kwargs):
             at this time so those values  fall-back to model default.
             """
             house_raw = ldap_user.attrs.get("schoolHouse")
-            houses = Student.House.labels
-            if house_raw:
-                if house_raw[0] in houses:
-                    data["house"] = house_raw[0][0:2].upper()
-
             year_raw = ldap_user.attrs.get("schoolYear")
+            prefect_raw = ldap_user.attrs.get("prefect")
+
+            # HOUSE
+            """
+            Create a dictionary of house names and values from enum
+            ldap returns are list, so grab first element and
+            look it up in dictionary using get (and upper due to enum)
+            """
+            houses = {house.name: house.value for house in Student.House}
+            if house_raw:
+                data["house"] = houses.get(house_raw[0].upper(), Student.House.UNSORTED)
+
+            # YEAR
             if year_raw:
-                years = Student.Year
-                data["year"] = years.labels.index(year_raw[0].split(" ")[0])
+                years = {year.name: year.value for year in Student.Year}
+                data["year"] = years.get(
+                    year_raw[0].split(" ")[0].upper(), Student.Year.UNKNOWN
+                )
 
-            prefect_raw = ldap_user.attrs.get("prefect")[0]
-            if prefect_raw == "TRUE":
-                data["prefect"] = True
-            else:
-                data["prefect"] = False
+            # PREFECT
+            data["prefect"] = (
+                True if prefect_raw and prefect_raw[0] == "TRUE" else False
+            )
 
-            """
-            As quidditch is its own object, it needs to be created, then linked
-            """
-            quidditch_raw = ldap_user.attrs.get("quidditchPlayer")
-            if quidditch_raw:
-                if quidditch_raw[0] == "TRUE":
-                    try:
-                        temp_profile2 = user.student.quidditchplayer
-                        print(temp_profile2)
-                    except Exception:
-                        temp_profile2 = QuidditchPlayer.objects.create(
-                            student=user.student
-                        )
-                        temp_profile2.save()
-                    # user.quidditchplayer.save()
-
-            """
-            Set all attributes and save the object
-            """
+            # Set all attributes and save the object
             for key, value in data.items():
-                if value:
+                if value is not None:
                     setattr(user.student, key, value)
             user.student.save()
 
-        elif account_type == "staff":
-            # Add to All Staff Group
-            all_staff_group = Group.objects.get(name="All Staff")
-            user.groups.add(all_staff_group)
-            try:
-                temp_profile = user.staff
-            except Exception:
-                temp_profile = Staff.objects.create(user=user)
+            # Quidditch object needs to be created and linked via Student FK
+            quidditch_raw = ldap_user.attrs.get("quidditchPlayer")
+            if quidditch_raw and quidditch_raw[0] == "TRUE":
+                try:
+                    user.student.quidditchplayer
+                except QuidditchPlayer.DoesNotExist:
+                    try:
+                        QuidditchPlayer.objects.create(student=user.student)
+                    except ValidationError as e:
+                        raise ValueError(f"Invalid Data in underlying Student: {e}")
 
+        elif account_type == "staff":
+            try:
+                user.staff
+            except Exception:
+                Staff.objects.create(user=user)
+
+            # HEAD OF HOUSE
             head_of_house_raw = ldap_user.attrs.get("headofHouse")
-            if head_of_house_raw:
+            if head_of_house_raw and head_of_house_raw[0] == "TRUE":
                 data["is_head_of_house"] = True
                 user.groups.add(Group.objects.get(name="Head of House"))
+            else:
+                data["is_head_of_house"] = False
+                user.groups.remove(Group.objects.get(name="Head of House"))
 
             for key, value in data.items():
                 if value:
                     setattr(user.staff, key, value)
             user.staff.save()
-    else:
-        pass
 
 
+#######################
+# Signal for user population
+# Passes the function above which gets called first before create_user_profile
+# function if via LDAP, other create_user_profile runs
+#######################
 django_auth_ldap.backend.populate_user.connect(populate_user_profile)
 
 
@@ -135,87 +145,178 @@ def create_user_profile(sender, instance, created, **kwargs):
         all_users_group = Group.objects.get(name="All Users")
         instance.groups.add(all_users_group)
 
-        try:
-            """
-            Student creation may need dependent Quidditch Object as well
-            This is created after the initial student object is created since
-            Quidditch is 1-2-1 relation and will error if object does not exist
-            """
+        # Create the profile object based on the user's account type
+        # Check that LDAP is creating the user, else skip processing
+        if hasattr(instance, "ldap_user"):
             account_type = instance.ldap_user.attrs.get("employeeType")[0].lower()
-            data: dict = {}
-
             if account_type == "student":
-                # Add to All Students Group
-                all_students_group = Group.objects.get(name="All Students")
-                instance.groups.add(all_students_group)
-
-                # Create Actual Student Object with attributes
                 profile = Student.objects.create(user=instance)
+            elif account_type == "staff":
+                profile = Staff.objects.create(user=instance)
+            elif account_type == "parent":
+                profile = Parent.objects.create(user=instance)
+            else:
+                raise ValueError("Invalid Account Type")
 
-                """
-                Initial  Student attributes are School House, School Year, and 
-                Prefect status. If a value from LDAP is supplied then we use that,
-                otherwise we fall back to the model default value for the
-                attribute. We also create a linked Quidditch object as needed.
-                LDAP does not currently store the granular quidditch attributes
-                at this time so those values  fall-back to model default.
-                """
+            """
+            Initial  Student attributes are School House, School Year, and
+            Prefect status. If a value from LDAP is supplied then we use that,
+            otherwise we fall back to the model default value for the
+            attribute. We also create a linked Quidditch object as needed.
+            LDAP does not currently store the granular quidditch attributes
+            at this time so those values  fall-back to model default.
+            """
+            if account_type == "student":
                 house_raw = instance.ldap_user.attrs.get("schoolHouse")
                 houses = Student.House.labels
-                if house_raw[0] in houses:
-                    data["house"] = house_raw[0][0:2].upper()
+                if house_raw and house_raw[0] in houses:
+                    profile.house = house_raw[0][0:2].upper()
 
                 year_raw = instance.ldap_user.attrs.get("schoolYear")
                 years = Student.Year
-                data["year"] = years.labels.index(year_raw[0].split(" ")[0])
+                profile.year = years.labels.index(year_raw[0].split(" ")[0])
 
-                prefect_raw = instance.ldap_user.attrs.get("prefect")[0]
-                if prefect_raw == "TRUE":
-                    data["prefect"] = True
-                else:
-                    data["prefect"] = False
+                prefect_raw = instance.ldap_user.attrs.get("prefect")
+                if prefect_raw and prefect_raw[0] == "TRUE":
+                    profile.prefect = True
 
+            if account_type == "staff":
+                if hasattr(profile, "is_head_of_house"):
+                    profile.is_head_of_house = (
+                        instance.ldap_user.attrs.get("headofHouse")[0] == "TRUE"
+                    )
+            # Save the profile object.
+            profile.save()
+
+            # Add Quidditch
+            if account_type == "student":
                 quidditch_raw = instance.ldap_user.attrs.get("quidditchPlayer")
-
-                """
-                Student object must be saved here before Quidditch Object is 
-                created
-                """
-                for key, value in data.items():
-                    if value:
-                        setattr(profile, key, value)
-                profile.save()
-
                 if quidditch_raw[0] == "TRUE":
-                    try:
-                        temp_profile = profile.quidditchplayer
-                    except Exception:
-                        temp_profile = QuidditchPlayer.objects.create(student=profile)
-                    temp_profile.save()
+                    QuidditchPlayer.objects.create(student=profile)
 
-            elif account_type == "staff":
-                # Add to All Staff Group
+            # Handle Remaining Group Memberships
+            # if account_type == "student":
+            #     all_students_group = Group.objects.get(name="All Students")
+            #     instance.groups.add(all_students_group)
+            if account_type == "staff":
                 all_staff_group = Group.objects.get(name="All Staff")
                 instance.groups.add(all_staff_group)
-
-                # Create Actual Student Object with attributes
-                profile = Staff.objects.create(user=instance)
-
-                head_of_house_raw = instance.ldap_user.attrs.get("headofHouse")
-                if head_of_house_raw:
-                    data["is_head_of_house"] = True
-                    instance.groups.add(Group.objects.get(name="Head of House"))
-
-                for key, value in data.items():
-                    if value:
-                        setattr(profile, key, value)
-                profile.save()
-
             elif account_type == "parent":
-                # Add to All Parent Group
                 all_parents_group = Group.objects.get(name="All Parents")
                 instance.groups.add(all_parents_group)
 
-        except AttributeError:
-            print("Created User via non-ldap route before ldap user exists")
-            pass
+
+@receiver(post_save, sender=Student)
+def handle_add_student_group(sender, instance, created, **kwargs):
+    all_students_group = Group.objects.get(name="All Students")
+    if not instance.user.groups.filter(name=all_students_group.name).exists():
+        instance.user.groups.add(all_students_group)
+
+
+@receiver(post_delete, sender=Student)
+def handle_remove_student_group(sender, instance, **kwargs):
+    all_students_group = Group.objects.get(name="All Students")
+    instance.user.groups.remove(all_students_group)
+
+
+@receiver(post_save, sender=Staff)
+def handle_add_staff_group(sender, instance, created, **kwargs):
+    all_staff_group = Group.objects.get(name="All Staff")
+    if not instance.user.groups.filter(name=all_staff_group.name).exists():
+        instance.user.groups.add(all_staff_group)
+
+
+@receiver(post_delete, sender=Staff)
+def handle_remove_staff_group(sender, instance, **kwargs):
+    all_staff_group = Group.objects.get(name="All Staff")
+    hoh_group = Group.objects.get(name="Head of House")
+    instance.user.groups.remove(all_staff_group)
+    instance.user.groups.remove(hoh_group)
+
+    # try:
+    #     """
+    #     Student creation may need dependent Quidditch Object as well
+    #     This is created after the initial student object is created since
+    #     Quidditch is 1-2-1 relation and will error if object does not exist
+    #     """
+    #     account_type = instance.ldap_user.attrs.get("employeeType")[0].lower()
+    #     data: dict = {}
+
+    #     if account_type == "student":
+    #         # Add to All Students Group
+    #         all_students_group = Group.objects.get(name="All Students")
+    #         instance.groups.add(all_students_group)
+
+    #         # Create Actual Student Object with attributes
+    #         profile = Student.objects.create(user=instance)
+
+    #         """
+    #         Initial  Student attributes are School House, School Year, and
+    #         Prefect status. If a value from LDAP is supplied then we use that,
+    #         otherwise we fall back to the model default value for the
+    #         attribute. We also create a linked Quidditch object as needed.
+    #         LDAP does not currently store the granular quidditch attributes
+    #         at this time so those values  fall-back to model default.
+    #         """
+    #         house_raw = instance.ldap_user.attrs.get("schoolHouse")
+    #         houses = Student.House.labels
+    #         if house_raw[0] in houses:
+    #             data["house"] = house_raw[0][0:2].upper()
+
+    #         year_raw = instance.ldap_user.attrs.get("schoolYear")
+    #         years = Student.Year
+    #         data["year"] = years.labels.index(year_raw[0].split(" ")[0])
+
+    #         prefect_raw = instance.ldap_user.attrs.get("prefect")[0]
+    #         if prefect_raw == "TRUE":
+    #             data["prefect"] = True
+    #         else:
+    #             data["prefect"] = False
+
+    #         quidditch_raw = instance.ldap_user.attrs.get("quidditchPlayer")
+
+    #         """
+    #         Student object must be saved here before Quidditch Object is
+    #         created
+    #         """
+    #         for key, value in data.items():
+    #             if value:
+    #                 setattr(profile, key, value)
+    #         profile.save()
+
+    #         if quidditch_raw[0] == "TRUE":
+    #             try:
+    #                 temp_profile = profile.quidditchplayer
+    #             except Exception:
+    #                 temp_profile = QuidditchPlayer.objects.create(student=profile)
+    #             temp_profile.save()
+
+    #     elif account_type == "staff":
+    #         # Add to All Staff Group
+    #         all_staff_group = Group.objects.get(name="All Staff")
+    #         instance.groups.add(all_staff_group)
+
+    #         # Create Actual Staff Object with attributes
+    #         profile = Staff.objects.create(user=instance)
+
+    #         head_of_house_raw = instance.ldap_user.attrs.get("headofHouse")
+    #         if head_of_house_raw:
+    #             data["is_head_of_house"] = True
+    #             instance.groups.add(Group.objects.get(name="Head of House"))
+
+    #         for key, value in data.items():
+    #             if value:
+    #                 setattr(profile, key, value)
+    #         profile.save()
+
+    #     elif account_type == "parent":
+    #         # Add to All Parent Group
+    #         all_parents_group = Group.objects.get(name="All Parents")
+    #         instance.groups.add(all_parents_group)
+
+    #         # Create Actual Staff Object with attributes
+    #         profile = Parent.objects.create(user=instance)
+
+    # except AttributeError:
+    #     print("Created User via non-ldap route before ldap user exists")
+    #     pass
