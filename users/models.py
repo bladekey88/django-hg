@@ -19,7 +19,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(Label.IS_ACTIVE, default=True)
     date_joined = models.DateTimeField(Label.DATE_JOINED, default=timezone.now)
     last_login = models.DateTimeField(
-        Label.LAST_LOGIN, blank=True, null=True, default=None
+        Label.LAST_LOGIN, blank=True, null=True, default=None, editable=False
     )
     first_name = models.CharField(Label.FIRST_NAME, max_length=255)
     middle_name = models.CharField(Label.MIDDLE_NAME, max_length=255, blank=True)
