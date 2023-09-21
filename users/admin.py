@@ -408,7 +408,7 @@ class ParentAdmin(admin.ModelAdmin):
             filters = [
                 x.uid
                 for x in CustomUser.objects.all()
-                if not x.is_student() and not x.is_school_staff()
+                if not x.is_student and not x.is_school_staff
             ]
             form.base_fields["user"].queryset = CustomUser.objects.filter(
                 uid__in=filters

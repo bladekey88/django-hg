@@ -5,23 +5,26 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.urls import reverse
+from userprofile.config import Label, Config
 
 from users.managers import CustomUserManager
 
 
 # Create your models here.
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(_("Email Address"), unique=True)
-    uid = models.CharField("User ID", max_length=20, unique=True)
-    idnumber = models.CharField("ID Number", max_length=20, unique=True)
-    is_staff = models.BooleanField("Access Managed Area", default=False)
-    is_active = models.BooleanField("Is Active", default=True)
-    date_joined = models.DateTimeField(default=timezone.now)
-    last_login = models.DateTimeField(blank=True, null=True, default=None)
-    first_name = models.CharField("First Name", max_length=255)
-    middle_name = models.CharField("Middle Name", max_length=255, blank=True)
-    last_name = models.CharField("Last Name", max_length=255)
-    common_name = models.CharField("Preferred Name", max_length=255)
+    email = models.EmailField(Label.EMAIL, unique=True)
+    uid = models.CharField(Label.UID, max_length=20, unique=True)
+    idnumber = models.CharField(Label.IDNUMBER, max_length=20, unique=True)
+    is_staff = models.BooleanField(Label.IS_SYSTEM_STAFF, default=False)
+    is_active = models.BooleanField(Label.IS_ACTIVE, default=True)
+    date_joined = models.DateTimeField(Label.DATE_JOINED, default=timezone.now)
+    last_login = models.DateTimeField(
+        Label.LAST_LOGIN, blank=True, null=True, default=None
+    )
+    first_name = models.CharField(Label.FIRST_NAME, max_length=255)
+    middle_name = models.CharField(Label.MIDDLE_NAME, max_length=255, blank=True)
+    last_name = models.CharField(Label.LAST_NAME, max_length=255)
+    common_name = models.CharField(Label.COMMON_NAME, max_length=255)
 
     class Sex(models.TextChoices):
         UNKNOWN = "U", "Unknown"
@@ -29,13 +32,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         FEMALE = "F", "Female"
 
     sex = models.CharField(
-        "Sex", max_length=1, choices=Sex.choices, default=Sex.UNKNOWN
+        Label.SEX, max_length=1, choices=Sex.choices, default=Sex.UNKNOWN
     )
-
-    USERNAME_FIELD = "uid"
-    REQUIRED_FIELDS = ["email", "idnumber"]
-
-    objects = CustomUserManager()
 
     class Title(models.TextChoices):
         UNKNOWN = "Unknown"
@@ -54,12 +52,20 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         DAME = "Dame"
 
     title = models.CharField(
-        "Title", max_length=20, default=Title.UNKNOWN, choices=Title.choices
+        Label.TITLE, max_length=20, default=Title.UNKNOWN, choices=Title.choices
     )
 
     created_externally = models.BooleanField(
         "Created From LDAP", default=False, editable=False
     )
+
+    USERNAME_FIELD = "uid"
+    REQUIRED_FIELDS = ["email", "idnumber"]
+    objects = CustomUserManager()
+
+    class Meta:
+        verbose_name = "User"
+        verbose_name_plural = "Users"
 
     def full_name(self, include_middle=True, last_name_first=False):
         if include_middle:
@@ -85,45 +91,30 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
             else:
                 return f"{self.common_name} {self.last_name}"
 
-    class Meta:
-        verbose_name = "User"
-        verbose_name_plural = "Users"
-
     def __str__(self):
         return f"{self.full_name(True)} - {self.uid}"
 
     def __repr__(self):
         return f"{self.full_name(True)} - {self.uid}"
 
+    @property
     def is_student(self):
-        try:
-            Student.objects.get(user=self)
-            return True
-        except Exception:
-            return False
+        """Returns True if the user is a student, False otherwise."""
+        return Student.objects.filter(user=self).exists()
 
+    @property
     def is_school_staff(self):
-        try:
-            Staff.objects.get(user=self)
-            return True
-        except Exception:
-            return False
+        """Returns True if the user is a school staff member, False otherwise."""
+        return Staff.objects.filter(user=self).exists()
 
+    @property
     def is_parent(self):
-        try:
-            Parent.objects.get(user=self)
-            return True
-        except Exception:
-            return False
+        """Returns True if the user is a parent, False otherwise."""
+        return Parent.objects.filter(user=self).exists()
 
 
 class Staff(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = "Staff Member"
-        verbose_name_plural = "Staff Members"
-        ordering = ("user__last_name",)
 
     class StaffType(models.TextChoices):
         ACADEMIC = "AC", "Academic"
@@ -131,25 +122,25 @@ class Staff(models.Model):
         CLERICAL = "CL", "Clerical"
         OTHER = "OT", "Other"
 
-    staff_type = models.TextField(
-        max_length=2,
-        choices=StaffType.choices,
+    staff_type = models.TextField(max_length=2, choices=StaffType.choices)
+    is_head_of_house = models.BooleanField(Label.IS_HEAD_OF_HOUSE, default=False)
+    date_created = models.DateTimeField(
+        Label.DATE_CREATED, auto_now_add=True, editable=False
     )
 
-    is_head_of_house = models.BooleanField("Is Head of House", default=False)
-    date_created = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        verbose_name = Label.STAFF_MEMBER
+        verbose_name_plural = Label.STAFF_MEMBER_PLURAL
+        ordering = ("user__last_name",)
 
     def clean(self, *args, **kwargs):
         USER_IS_STUDENT_ERROR = f"""
         {self.user.full_common_name()} cannot be a Staff Member because they
         already exist as a Student. If you wish to proceed you must remove
         the Student object."""
-
-        student_exists = self.user.is_student()
+        student_exists = self.user.is_student
         if student_exists:
             raise ValidationError(USER_IS_STUDENT_ERROR)
-        else:
-            print("Good to proceed")
 
     def __str__(self) -> str:
         return f"{self.user.full_name(True,True)} ({self.user.idnumber}-{self.get_staff_type_display()})"
@@ -210,14 +201,6 @@ class SchoolHouse(models.Model):
 
 
 class Student(models.Model):
-    class Meta:
-        verbose_name = "Student"
-        verbose_name_plural = "Students"
-        ordering = ("user__last_name",)
-        permissions = [
-            ("enrol_student", "Can sign up student to a course"),
-        ]
-
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
 
     class House(models.TextChoices):
@@ -228,6 +211,7 @@ class Student(models.Model):
         UNSORTED = "UN", "Unknown"
 
     house = models.CharField(
+        Label.HOUSE,
         max_length=2,
         default=House.UNSORTED,
         choices=House.choices,
@@ -244,21 +228,27 @@ class Student(models.Model):
         SEVENTH = 7
 
     year = models.IntegerField(
+        Label.YEAR,
         choices=Year.choices,
         default=Year.UNKNOWN,
         validators=[
-            MaxValueValidator(7),
-            MinValueValidator(1),
+            MaxValueValidator(Config.STUDENT_MAX_YEAR_VALIDATOR),
+            MinValueValidator(Config.STUDENT_MIN_YEAR_VALIDATOR),
         ],
     )
 
-    prefect = models.BooleanField("Is Prefect", default=False)
+    prefect = models.BooleanField(Label.IS_PREFECT, default=False)
     test_house = models.ForeignKey(
         SchoolHouse,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
     )
+
+    class Meta:
+        verbose_name = Label.STUDENT
+        verbose_name_plural = Label.STUDENT_PLURAL
+        ordering = ("user__last_name",)
 
     @property
     def is_sorted(self):
@@ -287,7 +277,7 @@ class Student(models.Model):
         already exist as a Staff Member. If you wish to proceed you must remove
         the Staff object."""
 
-        if self.user.is_school_staff():  # TODO add parent
+        if self.user.is_school_staff:  # TODO add parent
             raise ValidationError(USER_IS_STAFF_ERROR)
 
     def _validate_prefect(self):
@@ -427,8 +417,8 @@ class QuidditchPlayer(models.Model):
 
 class Parent(models.Model):
     class Meta:
-        verbose_name = "Parent"
-        verbose_name_plural = "Parents"
+        verbose_name = Label.PARENT
+        verbose_name_plural = Label.PARENT_PLURAL
 
     user = models.OneToOneField(
         CustomUser,
@@ -437,7 +427,7 @@ class Parent(models.Model):
     children = models.ManyToManyField(
         Student,
         symmetrical=False,
-        verbose_name="Children",
+        verbose_name=Label.PARENT_PLURAL,
         related_name="children_of",
     )
     related_parent = models.ManyToManyField(
@@ -467,8 +457,8 @@ class Parent(models.Model):
         )
 
     def clean(self):
-        student_exists = self.user.is_student()
-        staff_exists = self.user.is_school_staff()
+        student_exists = self.user.is_student
+        staff_exists = self.user.is_school_staff
         if student_exists or staff_exists:
             USER_IS_STUDENT_OR_STAFF_ERROR = f"""
                 {self.user.full_common_name()} cannot be added as a Parent

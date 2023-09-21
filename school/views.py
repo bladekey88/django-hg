@@ -44,7 +44,7 @@ class StudentProfileView(LoginRequiredMixin, PermissionRequiredMixin, View):
     def get(self, request, student):
         try:
             cu = CustomUser.objects.get(uid=student)
-            if cu.is_student():
+            if cu.is_student:
                 context = {}
                 context["user"] = cu
                 context["user_type"] = "student"
@@ -63,10 +63,10 @@ class StudentLandingView(
     template_name = "users/student_landing.html"
 
     def test_func(self):
-        return self.request.user.is_student() or self.request.user.is_superuser
+        return self.request.user.is_student or self.request.user.is_superuser
 
     def get(self, request):
-        if not request.user.is_student() and not request.user.is_superuser:
+        if not request.user.is_student and not request.user.is_superuser:
             return redirect("school:home")
         else:
             return render(request, self.template_name)
@@ -87,7 +87,7 @@ class StaffIndexView(LoginRequiredMixin, View):
     template_name = "users/staff_landing.html"
 
     def get(self, request):
-        if not request.user.is_school_staff() and not request.user.is_superuser:
+        if not request.user.is_school_staff and not request.user.is_superuser:
             return redirect("school:home")
         else:
             return render(request, self.template_name)
@@ -101,7 +101,7 @@ class StaffProfileView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     def get(self, request, staff):
         try:
             cu = CustomUser.objects.get(uid=staff)
-            if cu.is_school_staff():
+            if cu.is_school_staff:
                 context = {}
                 context["user"] = cu
                 context["user_type"] = "staff"
@@ -326,7 +326,7 @@ class CoursesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     # Use UserPassesTestMixin here rather than perm check
     # as Students also have that perm in their group
     def test_func(self):
-        return self.request.user.is_school_staff() or self.request.user.is_superuser
+        return self.request.user.is_school_staff or self.request.user.is_superuser
 
 
 class CourseView(DetailView):
@@ -432,7 +432,7 @@ class ClassesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     template_name = "school/class_list_all.html"
 
     def test_func(self):
-        return self.request.user.is_school_staff() or self.request.user.is_superuser
+        return self.request.user.is_school_staff or self.request.user.is_superuser
 
 
 class ClassView(PermissionRequiredMixin, DetailView):
@@ -446,7 +446,7 @@ class ClassView(PermissionRequiredMixin, DetailView):
         context["object"] = BasicClass.objects.get(slug=kwargs["class_slug"])
         obj = context["object"]
 
-        if request.user.is_student():
+        if request.user.is_student:
             if obj not in request.user.student.basicclass_set.all():
                 return redirect("school:course_detail", obj.course.slug, permanent=True)
 
@@ -579,11 +579,11 @@ class ScheduleDelete(PermissionRequiredMixin, DeleteView):
 # Homepage
 @login_required
 def home(request):
-    if request.user.is_student():
+    if request.user.is_student:
         return redirect("school:student_main")
-    elif request.user.is_school_staff():
+    elif request.user.is_school_staff:
         return redirect("school:staff_main")
-    elif request.user.is_parent():
+    elif request.user.is_parent:
         return redirect("school:parent_main")
     else:
         return HttpResponse(
