@@ -303,7 +303,12 @@ class CustomUserAdmin(UserAdmin):
         "first_name",
         "last_name",
     )
-    readonly_fields = ["get_fullname", "created_externally"]
+    readonly_fields = [
+        "get_fullname",
+        "created_externally",
+        "last_login",
+        "date_joined",
+    ]
     ordering = ("uid",)
 
     def has_change_permission(self, request, obj=None):

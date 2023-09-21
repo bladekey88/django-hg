@@ -17,7 +17,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     idnumber = models.CharField(Label.IDNUMBER, max_length=20, unique=True)
     is_staff = models.BooleanField(Label.IS_SYSTEM_STAFF, default=False)
     is_active = models.BooleanField(Label.IS_ACTIVE, default=True)
-    date_joined = models.DateTimeField(Label.DATE_JOINED, default=timezone.now)
+    date_joined = models.DateTimeField(
+        Label.DATE_JOINED, default=timezone.now, editable=False
+    )
     last_login = models.DateTimeField(
         Label.LAST_LOGIN, blank=True, null=True, default=None, editable=False
     )
