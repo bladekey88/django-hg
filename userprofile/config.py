@@ -27,6 +27,13 @@ class Default(object):
         PARENT_PLURAL: str = "Parents"
         PARENT_CHILDREN: str = "Children"
 
+    class DefaultGroup:
+        ALL_USERS = "All Users"
+        ALL_STAFF = "All Staff"
+        ALL_STUDENT = "All Students"
+        ALL_PARENT = "All Parents"
+        HEADS_OF_HOUSE = "Heads of House"
+
     class DefaultConfig:
         STUDENT_MIN_YEAR_VALIDATOR: int = 1
         STUDENT_MAX_YEAR_VALIDATOR: int = 7
@@ -53,4 +60,8 @@ class Label(Default.DefaultLabel):
 
 
 class Config(Default.DefaultConfig):
+    pass
+
+
+class ConfigGroup(Default.DefaultGroup):
     pass
