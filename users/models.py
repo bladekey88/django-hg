@@ -429,7 +429,7 @@ class Parent(models.Model):
     children = models.ManyToManyField(
         Student,
         symmetrical=False,
-        verbose_name=Label.PARENT_PLURAL,
+        verbose_name=Label.PARENT_CHILDREN,
         related_name="children_of",
     )
     related_parent = models.ManyToManyField(
