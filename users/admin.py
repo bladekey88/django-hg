@@ -163,7 +163,7 @@ class QuidditchPlayerAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         if obj:
-            if obj.student.user.is_active is False:
+            if not obj.student.user.is_active:
                 return False
         return super(QuidditchPlayerAdmin, self).has_change_permission(request, obj)
 
@@ -172,10 +172,6 @@ class QuidditchPlayerAdmin(admin.ModelAdmin):
             if obj.student.user.is_active is False:
                 return False
         return super(QuidditchPlayerAdmin, self).has_delete_permission(request, obj)
-
-    def get_queryset(self, request: HttpRequest) -> QuerySet[Any]:
-        qs = super().get_queryset(request)
-        return qs.filter(student__user__is_active=True)
 
 
 class CustomUserAdmin(UserAdmin):

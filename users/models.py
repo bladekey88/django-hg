@@ -404,11 +404,9 @@ class QuidditchPlayer(models.Model):
             if current_captains.count() == 4 and self not in current_captains:
                 raise ValidationError(TOO_MANY_CAPTAINS_ERROR)
 
-        if student_exists:
-            return super(QuidditchPlayer, self).save(*args, **kwargs)
-
     def save(self, *args, **kwargs):
         self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.student.user.common_name} {self.student.user.last_name}"
