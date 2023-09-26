@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from .api import api
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -26,5 +28,6 @@ urlpatterns = [
     # path("catalog/", include("catalog.urls", namespace="catalog")),
     path("library/", include("library.urls", namespace="library")),
     path("", include("school.urls", namespace="school")),
+    path("api/", api.urls),
     path("__debug__/", include("debug_toolbar.urls")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

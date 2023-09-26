@@ -21,7 +21,7 @@ def populate_user_profile(sender, user, ldap_user, **kwargs):
     user.created_externally = True
     user.save()
 
-    all_users_group = Group.objects.get(name=ConfigGroup.ALL_USERS_GROUP)
+    all_users_group = Group.objects.get(name=ConfigGroup.ALL_USERS)
     if not user.groups.filter(name=all_users_group.name).exists():
         user.groups.add(all_users_group)
 
