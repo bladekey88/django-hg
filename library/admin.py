@@ -327,14 +327,17 @@ class BorrowerAdmin(admin.ModelAdmin):
         "status",
         "max_fine_amount",
         "borrow_limit",
-        "is_librarian",
+        "librarian",
+        "valid_librarian",
     ]
     list_filter = [
         "status",
         "borrow_limit",
     ]
     search_fields = [
-        "user__common_name",
+        "user__last_name",
+        "user__first_name",
+        "user__last_name",
         "user__uid",
         "user__email",
     ]

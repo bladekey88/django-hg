@@ -694,15 +694,25 @@ class Borrower(models.Model):
         help_text="Maximum number of items a user can borrow at any one time",
     )
 
+    librarian = models.BooleanField("Is Librarian", default=False)
+
     def __str__(self):
-        return f"{self.user.full_name()}"
+        return f"{self.user.full_common_name()}"
+
+    def __repr__(self):
+        return f"{self.user.full_common_name()}"
 
     def get_absolute_url(self):
         return reverse("library:borrower-detail", kwargs={"pk": self.pk})
 
     @property
-    def is_librarian(self):
-        return self.user.groups.filter(name="Librarians").exists()
+    def valid_librarian(self):
+        """Must have librarian flag set in borrower record and be in Librarian group to be valid"""
+        return (
+            self.librarian
+            and self.user.groups.filter(name="Librarians").exists()
+            and self.status == self.BorrowerStatus.ACTIVE
+        )
 
 
 class BookInstance(models.Model):
@@ -864,6 +874,7 @@ class CheckOut(models.Model):
         Borrower,
         on_delete=models.DO_NOTHING,
         related_name="issuer",
+        limit_choices_to={"librarian": True},
     )
     item_instance = models.ForeignKey(GenericInstance, on_delete=models.PROTECT)
     checkout_date = models.DateTimeField(auto_now_add=True)
@@ -874,7 +885,7 @@ class CheckOut(models.Model):
     def clean(self, *args, **kwargs):
         super().clean(*args, **kwargs)
         if (
-            not self.item_instance.can_be_checked_out()
+            not self.item_instance.can_be_checked_out
             and not self.item_instance.is_checked_out
         ):
             raise ValidationError("The item is not available for checkout")

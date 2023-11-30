@@ -140,25 +140,29 @@
                 Class{{user.student.basicclass_set.count|pluralize:"es"}}
             </h5>
             <div class="class-info">
-                {% for class in user.student.basicclass_set.all %}
-                <label for="className">Name</label>
-                <h5 id="className">
-                    <a class="text-decoration-none"
-                        href="{% url 'school:class_detail' class.course.slug class.slug  %}">
-                        {{class.name}}
-                    </a>
-                </h5>
-                <label for="classCode">Class Code</label>
-                <h5 id="classCode">{{class.class_code}}</h5>
-                <label for="classTeacher">Teacher{{class.teacher.all.count|pluralize}}</label>
-                <h5 id="classTeacher">
-                    <ul class="list-unstyled px-0 mx-0">
-                        {% for t in class.teacher.all %}
-                        <li> {{t.user.full_common_name}}</li>
-                        {%endfor%}
-                    </ul>
-                </h5>
-                {% endfor %}
+                <ul>
+                    {% for class in user.student.basicclass_set.all %}
+                    <li>
+                        <label for="className" hidden aria-hidden="false" role="presentation">Name</label>
+                        <h5 id="className">
+                            <a class="text-decoration-none"
+                                href="{% url 'school:class_detail' class.course.slug class.slug  %}">
+                                {{class.name}}
+                            </a>
+                        </h5>
+                        <label for="classCode">Class Code</label>
+                        <h5 id="classCode">{{class.class_code}}</h5>
+                        <label for="classTeacher">Teacher{{class.teacher.all.count|pluralize}}</label>
+                        <h5 id="classTeacher">
+                            <ul class="list-unstyled px-0 mx-0">
+                                {% for t in class.teacher.all %}
+                                <li> {{t.user.full_common_name}}</li>
+                                {%endfor%}
+                            </ul>
+                        </h5>
+                    </li>
+                    {% endfor %}
+                </ul>
             </div>
         </div>
         {%endif%}

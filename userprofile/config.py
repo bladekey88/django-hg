@@ -7,6 +7,7 @@ class Default(object):
         IS_SYSTEM_STAFF: str = "Access Managed Area"
         IS_ACTIVE: str = "Is Active"
         DATE_CREATED: str = "Date Created"
+        DATE_MODIFIED: str = "Date Modified"
         DATE_JOINED: str = "Date Joined"
         LAST_LOGIN: str = "Last Logged In"
         FIRST_NAME: str = "First Name"
@@ -32,7 +33,7 @@ class Default(object):
         ALL_STAFF = "All Staff"
         ALL_STUDENT = "All Students"
         ALL_PARENT = "All Parents"
-        HEADS_OF_HOUSE = "Heads of House"
+        HEADS_OF_HOUSE_GROUP = "Heads of House"
 
     class DefaultConfig:
         STUDENT_MIN_YEAR_VALIDATOR: int = 1

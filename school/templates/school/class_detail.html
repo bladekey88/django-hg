@@ -79,7 +79,6 @@
 
     tbody>tr:hover {
         color: #009879;
-        font-weight: bolder;
         background-color: rgb(250, 250, 78, 0.6);
     }
 
@@ -157,7 +156,7 @@
             <tr>
                 <td>
                     <a href="{% url 'school:student_profile' enrolment.student.user.uid %}">
-                        {{enrolment.student.user.full_name}} ({{enrolment.student.user.uid}})
+                        {{enrolment.student.user.full_common_name}} ({{enrolment.student.user.uid}})
                     </a>
                 </td>
                 <td>{{enrolment.student.user.idnumber}}</td>

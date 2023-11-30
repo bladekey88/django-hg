@@ -445,7 +445,6 @@ class ClassView(PermissionRequiredMixin, DetailView):
         context = {}
         context["object"] = BasicClass.objects.get(slug=kwargs["class_slug"])
         obj = context["object"]
-
         if request.user.is_student:
             if obj not in request.user.student.basicclass_set.all():
                 return redirect("school:course_detail", obj.course.slug, permanent=True)

@@ -13,7 +13,7 @@ from users.managers import CustomUserManager
 # Create your models here.
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(Label.EMAIL, unique=True)
-    uid = models.CharField(Label.UID, max_length=20, unique=True)
+    uid = models.CharField(Label.UID, max_length=30, unique=True)
     idnumber = models.CharField(Label.IDNUMBER, max_length=20, unique=True)
     is_staff = models.BooleanField(Label.IS_SYSTEM_STAFF, default=False)
     is_active = models.BooleanField(Label.IS_ACTIVE, default=True)

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "maintenance_mode",
     "formtools",
     "users.apps.UsersConfig",
     "ldap_sync",
@@ -61,6 +62,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "maintenance_mode.middleware.MaintenanceModeMiddleware",
 ]
 
 ROOT_URLCONF = "userprofile.urls"
@@ -98,7 +100,6 @@ DATABASES = {
     }
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
@@ -117,7 +118,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
@@ -126,7 +126,6 @@ TIME_ZONE = "Europe/London"
 USE_I18N = True
 USE_TZ = True
 USE_L10N = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
@@ -139,7 +138,6 @@ STATICFILES_DIRS = [
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
-
 
 INTERNAL_IPS = [
     "127.0.0.1",
@@ -154,7 +152,6 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     "django_auth_ldap.backend.LDAPBackend",
 ]
-
 
 # LDAP Settings
 AUTH_LDAP_SERVER_URI = "ldap://hogwarts.wiz"
@@ -184,12 +181,10 @@ AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
     "ou=groups,dc=hogwarts,dc=wiz", ldap.SCOPE_SUBTREE, "(objectClass=groupOfNames)"
 )
 AUTH_LDAP_GROUP_TYPE = GroupOfNamesType()
-
 AUTH_LDAP_USER_FLAGS_BY_GROUP = {
     "is_staff": LDAPGroupQuery("cn=Hogwarts Staff,ou=groups,dc=hogwarts,dc=wiz"),
     "is_superuser": LDAPGroupQuery("cn=administrators,ou=groups,dc=hogwarts,dc=wiz"),
 }
-
 
 LOGIN_REDIRECT_URL = "school:home"
 LOGIN_URL = "account:login"
@@ -228,3 +223,6 @@ SESSION_COOKIE_AGE = 60 * 60
 SESSION_SAVE_EVERY_REQUEST = True
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+# MAINTENANCE MODE
+MAINTENANCE_MODE = False

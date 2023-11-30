@@ -21,7 +21,7 @@ class MainView(LoginRequiredMixin, UserPassesTestMixin, View):
             """This is a test mail. You do not need to take any further actions."""
         )
         from_email = EMAIL_HOST_USERNAME
-        recipient_list = [request]
+        recipient_list = Staff.objects.all()
         messages = [
             (subject, message, from_email, [r.user.email]) for r in recipient_list
         ]
